@@ -27,9 +27,11 @@ $(function() {
 
 var origin = new THREE.Vector3(0,0,0);
 
-var maxHeight = 1;
-var heightMapWidth = 128;
-var heightMapLength = 128;
+var maxSandHeight = 1; // absolute height scale for visualization, no effect on simulation
+var initSandHeight = 0.5; // relative value in range [0, 1]
+
+var heightMapWidth = 64;
+var heightMapLength = 64;
 var hm = new Uint8ClampedArray(heightMapWidth * heightMapLength);
 
 var scene, camera, renderer;
@@ -64,7 +66,8 @@ function init() {
   var sandMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe:true});
   var mesh = new THREE.Mesh(geo, sandMaterial);
   scene.add(mesh);
-  morphMesh();
+  initHeightmap();
+  updateMesh();
   document.body.appendChild( renderer.domElement );
   window.addEventListener( 'resize', onWindowResize, false );
 }
@@ -78,16 +81,29 @@ function render() {
 	requestAnimationFrame( render );
 }
 
-function morphMesh() {
-  hm[30] = 255; // Math.max(0.2 * (1 + Math.sin(i)), 0.2 * (1 + Math.cos(j)));
-  var multiplier = maxHeight / 255;
+function initHeightmap() {
+  var level = initSandHeight * 255;
+  for (var i = 0, len = hm.length; i < len; ++i) {
+    hm[i] = level;
+  }
+}
 
+function updateMesh() {
+  hm[30] = 255; // one max height point for testing
+  hm[2520] = 0; // and one min height point
+  var multiplier = maxSandHeight / 255;
+
+  for (var i = 0, len = hm.length; i < len; ++i) {
+    geo.vertices[i].y = hm[i] * multiplier;
+  }
+  /*
   for (var i = 0; i < heightMapWidth; ++i) {
     for (var j = 0; j < heightMapLength; ++j) {
       var index = i + j * heightMapWidth;
       geo.vertices[index].y = hm[index] * multiplier;
     }
   }
+  */
 }
 
 function onWindowResize() {
