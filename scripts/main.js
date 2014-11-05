@@ -1,4 +1,21 @@
 /**
+ * Slider constructor
+ * @return {[type]} [description]
+ */
+$(function() {
+    $( "#slider" ).slider({
+    	value:1,
+    	min:0,
+    	max:10,
+    	step:1,
+    	slide:function (event, ui) {
+    		$('.value').html(ui.value);
+    	}
+    });
+    // Shows default value
+    $('.value').html($('#slider').slider('value'));
+ });
+/**
  * THREE.js example
  * @type {THREE}
  */
