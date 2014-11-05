@@ -27,11 +27,14 @@ $(function() {
 
 var origin = new THREE.Vector3(0,0,0);
 
-var maxSandHeight = 1; // absolute height scale for visualization, no effect on simulation
-var initSandHeight = 0.5; // relative value in range [0, 1]
+// absolute scales for visualization; no effect on simulation
+var maxSandHeight = 1;
+var sandWidth = 10;
+var sandLength = 10;
 
-var heightMapWidth = 64;
-var heightMapLength = 64;
+var initSandHeight = 0.5; // relative value in range [0, 1]
+var heightMapWidth = 64; // horizontal quad count
+var heightMapLength = 64; // lengthwise quad count
 var hm = new Uint8ClampedArray(heightMapWidth * heightMapLength);
 
 var scene, camera, renderer;
@@ -54,7 +57,7 @@ function init() {
   stats.domElement.style.position = 'absolute';
   stats.domElement.style.top = '0px';
   stats.domElement.style.zIndex = 10;
-  document.body.appendChild( this.stats.domElement );
+  document.body.appendChild( stats.domElement );
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
   camera.position.z = 5;
@@ -62,7 +65,7 @@ function init() {
   camera.lookAt(origin);
   renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
-  geo = new THREE.PlaneGeometry(10, 10, heightMapWidth-1, heightMapLength-1);
+  geo = new THREE.PlaneGeometry(sandWidth, sandLength, heightMapWidth-1, heightMapLength-1);
   geo.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
   geo.computeFaceNormals();
   geo.computeVertexNormals();
@@ -86,6 +89,9 @@ function render() {
 	stats.update();
 	renderer.render( scene, camera );
 	requestAnimationFrame( render );
+}
+
+function poke() {
 }
 
 function initHeightmap() {
