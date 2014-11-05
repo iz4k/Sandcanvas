@@ -61,6 +61,7 @@ function init() {
   scene.add(mesh);
   morphMesh();
   document.body.appendChild( renderer.domElement );
+  window.addEventListener( 'resize', onWindowResize, false );
 }
 
 function render() {
@@ -80,4 +81,9 @@ function morphMesh() {
 
     }
   }
+}
+function onWindowResize() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
 }
