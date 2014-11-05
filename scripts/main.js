@@ -1,3 +1,5 @@
+"use strict";
+
 /**
  * Slider constructor
  * @return {[type]} [description]
@@ -23,11 +25,12 @@ $(function() {
 // data typed arrayhun!
 // http://www.html5rocks.com/en/tutorials/webgl/typed_arrays/
 
-var heightMapWidth = 128;
-var heightMapLength = 128;
 var origin = new THREE.Vector3(0,0,0);
 
-var heightMap = new Uint8ClampedArray(heightMapWidth * heightMapLength);
+var maxHeight = 1;
+var heightMapWidth = 128;
+var heightMapLength = 128;
+var hm = new Uint8ClampedArray(heightMapWidth * heightMapLength);
 
 var scene, camera, renderer;
 var geo;
@@ -76,14 +79,17 @@ function render() {
 }
 
 function morphMesh() {
-  geo.vertices[30].y = 10; // + 1 * (heightMapLength-1)].y = 10;
+  hm[30] = 255; // Math.max(0.2 * (1 + Math.sin(i)), 0.2 * (1 + Math.cos(j)));
+  var multiplier = maxHeight / 255;
+
   for (var i = 0; i < heightMapWidth; ++i) {
     for (var j = 0; j < heightMapLength; ++j) {
-      geo.vertices[i + j * heightMapWidth].y = Math.max(0.2 * (1 + Math.sin(i)), 0.2 * (1 + Math.cos(j)));
-
+      var index = i + j * heightMapWidth;
+      geo.vertices[index].y = hm[index] * multiplier;
     }
   }
 }
+
 function onWindowResize() {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
