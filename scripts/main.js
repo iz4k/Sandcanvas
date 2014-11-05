@@ -24,8 +24,9 @@ var heightMapWidth = 128;
 var heightMapLength = 128;
 
 var scene, camera, renderer;
-var sandGeometry;
+var geo;
 
+var clock = new THREE.Clock();
 
 init();
 
@@ -33,11 +34,6 @@ var geometry = new THREE.BoxGeometry( 1, 1, 1 );
 var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
 var cube = new THREE.Mesh( geometry, material );
 scene.add(cube);
-
-var geometry2 = new THREE.BoxGeometry( 1, 1, 1 );
-var material2 = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
-var cube2 = new THREE.Mesh( geometry2, material2 );
-scene.add(cube2);
 
 render();
 
@@ -48,24 +44,29 @@ function init() {
   camera.position.y = 2;
   renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
-  sandGeometry = new THREE.PlaneGeometry(10, 10, heightMapWidth-1, heightMapLength-1);
-  sandGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-  sandGeometry.computeFaceNormals();
-  sandGeometry.computeVertexNormals();
-  var checkerBoardTexture = THREE.ImageUtils.loadTexture("images/white-gray-checkerboard.png");
-  checkerBoardTexture.wrapS = checkerBoardTexture.wrapT = THREE.RepeatWrapping;
-  checkerBoardTexture.repeat.set(5,5);
+  geo = new THREE.PlaneGeometry(10, 10, heightMapWidth-1, heightMapLength-1);
+  geo.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+  geo.computeFaceNormals();
+  geo.computeVertexNormals();
+  //var checkerBoardTexture = THREE.ImageUtils.loadTexture("images/white-gray-checkerboard.png");
+  //checkerBoardTexture.wrapS = checkerBoardTexture.wrapT = THREE.RepeatWrapping;
+  //checkerBoardTexture.repeat.set(5,5);
   var sandMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe:true});
-  var mesh = new THREE.Mesh(sandGeometry, sandMaterial);
+  var mesh = new THREE.Mesh(geo, sandMaterial);
   scene.add(mesh);
+  morphMesh();
   document.body.appendChild( renderer.domElement );
 }
 
 function render() {
+  var delta = clock.getDelta();
+  var time = clock.getElapsedTime() * 10;
 	cube.rotation.x += 0.1;
 	cube.rotation.y += 0.1;
-  cube2.position.y = -0.7;
 	renderer.render( scene, camera );
 	requestAnimationFrame( render );
 }
 
+function morphMesh() {
+//  for (var i = 0; i < )
+}
