@@ -1,3 +1,4 @@
+/*	General rules & fixes  */
 body,html{margin:0;padding:0;font-family: Helvetica, Arial;}
 p {
 -webkit-margin-before: 0;
@@ -5,6 +6,7 @@ p {
 -webkit-margin-start: 0;
 -webkit-margin-end: 0px;
 }
+/*	site basic styles  */
 h1{
 	position:absolute;
 	width:100%;
@@ -20,7 +22,8 @@ canvas{
 .ui{
 	background-color: #2190c1;
 	position:absolute;
-	width:200px;
+	width:15%;
+	min-width:110px;
 	top:0;
 	right:0;
 	padding:15px 10px;
@@ -29,4 +32,21 @@ canvas{
 }
 .ui p{
 	padding-bottom: 5px;
+}
+/*	jQuery UI slider overrides  */
+
+.ui-widget-content{
+	background:#eee;
+}
+.ui-slider .ui-slider-handle{
+	width: 1em;
+	height: 0.6em;
+	border-radius: 50%;
+}
+.ui-state-default, .ui-widget-content .ui-state-default, .ui-widget-header .ui-state-default{
+	background: #333;
+	border:0;
+}
+.ui-slider-horizontal{
+	height: 0em;
 }
