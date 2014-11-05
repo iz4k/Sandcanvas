@@ -29,6 +29,7 @@ var origin = new THREE.Vector3(0,0,0);
 
 var scene, camera, renderer;
 var geo;
+var stats;
 
 var clock = new THREE.Clock();
 
@@ -42,6 +43,11 @@ scene.add(cube);
 render();
 
 function init() {
+  stats = new Stats();
+  stats.domElement.style.position = 'absolute';
+  stats.domElement.style.top = '0px';
+  stats.domElement.style.zIndex = 10;
+  document.body.appendChild( this.stats.domElement );
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
   camera.position.z = 5;
@@ -69,6 +75,7 @@ function render() {
   var time = clock.getElapsedTime() * 10;
 	cube.rotation.x += 0.1;
 	cube.rotation.y += 0.1;
+	stats.update();
 	renderer.render( scene, camera );
 	requestAnimationFrame( render );
 }
