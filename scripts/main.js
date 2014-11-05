@@ -27,6 +27,8 @@ var heightMapWidth = 128;
 var heightMapLength = 128;
 var origin = new THREE.Vector3(0,0,0);
 
+var heightMap = new Uint8ClampedArray(heightMapWidth * heightMapLength);
+
 var scene, camera, renderer;
 var geo;
 
