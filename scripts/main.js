@@ -20,8 +20,12 @@ $(function() {
  * @type {THREE}
  */
 
+// data typed arrayhun!
+// http://www.html5rocks.com/en/tutorials/webgl/typed_arrays/
+
 var heightMapWidth = 128;
 var heightMapLength = 128;
+var origin = new THREE.Vector3(0,0,0);
 
 var scene, camera, renderer;
 var geo;
@@ -41,7 +45,8 @@ function init() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
   camera.position.z = 5;
-  camera.position.y = 2;
+  camera.position.y = 6;
+  camera.lookAt(origin);
   renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
   geo = new THREE.PlaneGeometry(10, 10, heightMapWidth-1, heightMapLength-1);
@@ -68,5 +73,11 @@ function render() {
 }
 
 function morphMesh() {
-//  for (var i = 0; i < )
+  geo.vertices[30].y = 10; // + 1 * (heightMapLength-1)].y = 10;
+  for (var i = 0; i < heightMapWidth; ++i) {
+    for (var j = 0; j < heightMapLength; ++j) {
+      geo.vertices[i + j * heightMapWidth].y = Math.max(0.2 * (1 + Math.sin(i)), 0.2 * (1 + Math.cos(j)));
+
+    }
+  }
 }
