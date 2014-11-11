@@ -33,8 +33,8 @@ var sandWidth = 10;
 var sandLength = 10;
 
 var initSandHeight = 0.5; // relative value in range [0, 1]
-var heightMapWidth = 64; // horizontal quad count
-var heightMapLength = 64; // lengthwise quad count
+var heightMapWidth = 25; // horizontal vertex count
+var heightMapLength = 25; // lengthwise vertex count
 var hm = new Uint8ClampedArray(heightMapWidth * heightMapLength);
 
 var scene, camera, renderer;
@@ -77,6 +77,7 @@ function init() {
   scene.add(mesh);
   initHeightmap();
   updateMesh();
+  poke(0,0,2);
   document.body.appendChild( renderer.domElement );
   window.addEventListener( 'resize', onWindowResize, false );
 }
@@ -91,7 +92,24 @@ function render() {
 	requestAnimationFrame( render );
 }
 
-function poke() {
+function poke(centerx, centerz, fingerRadius) {
+  // btw: will we sanitize the inputs so touches
+  // close to sandbox edge are not allowed?
+
+  //-sandWidth/2
+  //   |                     |
+  //   |     leftX           |
+  //   |       (    +    )   |
+  //   |                     |
+  //   i  i  i  i  i  i  i  i|
+  var dx = sandWidth / (heightMapWidth-1);
+  var dz = sandLength / (heightMapLength-1);
+  var leftx = centerx - fingerRadius;
+  var lefti = Math.ceil((leftx - sandWidth/2)/sandWidth * (heightMapWidth-1));
+//  var rightX = centerX + fingerRadius;
+  var rightx = centerx + fingerRadius;
+  //for (var i = 0; i < )
+
 }
 
 function initHeightmap() {
