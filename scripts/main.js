@@ -20,17 +20,7 @@ $(function() {
     $("#debug").on("click", function(){
     	debugModeToggle();
     });
-    
-    $(document).keyup(function(evt) {
-    if (evt.keyCode == 32) {
-      controls.enable = false;
-    }
-  }).keydown(function(evt) {
-    if (evt.keyCode == 32) {
-      controls.enable = true;
-    }
-  });
-    
+
     // Shows default value
     $('.value').html($('#slider').slider('value'));
  });
