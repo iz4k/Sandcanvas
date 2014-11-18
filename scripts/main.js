@@ -139,6 +139,10 @@ function render() {
 	requestAnimationFrame( render );
 }
 
+function erode() {
+  var liquidity = 0.8;
+  var roughness = 0.2;
+}
 
 // takes world coordinates
 function poke(x0, z0, r) {
