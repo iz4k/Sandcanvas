@@ -88,21 +88,21 @@ function init() {
 	geo.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 	geo.computeFaceNormals();
 	geo.computeVertexNormals();
-	
+
 	//var checkerBoardTexture = THREE.ImageUtils.loadTexture("images/white-gray-checkerboard.png");
 	//checkerBoardTexture.wrapS = checkerBoardTexture.wrapT = THREE.RepeatWrapping;
 	//checkerBoardTexture.repeat.set(5,5);
 
-	
+
 	// LIGHTS
 
-	var spotLight = new THREE.SpotLight( 0xffffff ); 
-	spotLight.position.set( 10, 50, 0 ); 
-	spotLight.castShadow = true; 	
+	var spotLight = new THREE.SpotLight( 0xffffff );
+	spotLight.position.set( 10, 50, 0 );
+	spotLight.castShadow = true;
 	scene.add( spotLight );
 	var ambientLight = new THREE.AmbientLight( 0xffffff );
 	scene.add( ambientLight );
-	
+
 //	var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 ); directionalLight.position.set( 0, 1, 0 ); scene.add( directionalLight );
 
 
@@ -121,9 +121,9 @@ function init() {
 //		normalMap: normalmap,
 //		normalScale: {x:0,y:1,z:0},
 		bumpMap: bumpmap,
-		bumpScale: 0.2,	
+		bumpScale: 0.2,
 		color: 0xC2B280,   //diffuse
-		
+
 		specular: 0x6D6C6B,
 		ambient: 0x050505,
 		shininess: 1,
@@ -135,8 +135,8 @@ function init() {
 	mesh.castShadow = true;
 	mesh.receiveShadow = true;
 	scene.add(mesh);
-	
-	
+
+
 //	var ambient = 0x050505, diffuse = 0x331100, specular = 0xffffff, shininess = 10, scale = 1;
 
 //	// normal map shader
@@ -189,7 +189,7 @@ function init() {
 
 //	//
 
-//	
+//
 //	var mesh1 = new THREE.Mesh( geo, material1 );
 //	//mesh1.position.x = - scale * 12;
 //	mesh1.scale.set( scale, scale, scale );
@@ -204,13 +204,13 @@ function init() {
 //	mesh2.receiveShadow = true;
 //	scene.add( mesh2 );
 
-	
+
 	//OTHER STUFF
-	
+
 	initHeightmap();
 
 	needsUpdate = true;
-	
+
 
 	document.body.appendChild( renderer.domElement );
 	window.addEventListener( 'resize', onWindowResize, false );
@@ -250,19 +250,13 @@ function render() {
   var delta = clock.getDelta();
   var time = clock.getElapsedTime() * 10;
 
-<<<<<<< HEAD
-
-||||||| merged common ancestors
-=======
- 	
  	if (needsUpdate){
  		updateMesh();
 	 	geo.computeFaceNormals();
 		geo.computeVertexNormals();
-		
+
 	}
 
->>>>>>> FETCH_HEAD
 	stats.update();
 	controls.update();
 	renderer.render( scene, camera );
@@ -270,6 +264,8 @@ function render() {
 }
 
 function erode() {
+  needsUpdate = true;
+
   // algo description in Sumner (1999) unclear, but best we have
   var outAngle = 0.436;
   var liquidity = 0.8;
@@ -286,7 +282,7 @@ function erode() {
   // any artifacts from sequential processing?
   // using second array does not appear to make sense
 
-  var thres = 0.4; // debug threshold, hax
+  var thres = 0.1; // debug threshold, hax
 
   // hax: for now, just skip the edge indices
   for (var i=1; i<heightMapWidth-1; ++i) {
@@ -417,10 +413,10 @@ function onMouseDown( event ) {
   var distance = - camera.position.y / dir.y;
 
 
-  var pos = camera.position.clone().add( dir.multiplyScalar( distance ) ); 
+  var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
   poke(pos.x, pos.z, pokeWidth);
   needsUpdate = true;
-  
+
 
   //console.log("X: "+pos.x.toFixed(4)+" Z: "+pos.z.toFixed(4));
 //  var hmpos = heightMapPos(pos.x, pos.z);
@@ -446,7 +442,7 @@ function updateMesh() {
 
   }
   geo.verticesNeedUpdate = true;
-  geo.normalsNeedUpdate = true; 
+  geo.normalsNeedUpdate = true;
   needsUpdate = false;
   /*
   for (var i = 0; i < heightMapWidth; ++i) {
