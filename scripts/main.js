@@ -76,7 +76,9 @@ function init() {
   var mesh = new THREE.Mesh(geo, sandMaterial);
   scene.add(mesh);
   initHeightmap();
-  poke(0,0,0.5);
+  poke(0,0, 0.5);
+  poke(0.8, 0.2, 0.5);
+  poke(-2, 3, 1);
   updateMesh();
   document.body.appendChild( renderer.domElement );
   window.addEventListener( 'resize', onWindowResize, false );
@@ -104,9 +106,12 @@ function poke(x0, z0, r) {
   //   |                     |
   //   i  i  i  i  i  i  i  i|
 
-  // TODO: optimization: only process the neighborhood block
+  var displacedVolume;
+
   var dx = sandWidth / (heightMapWidth-1);
   var dz = sandLength / (heightMapLength-1);
+
+  // TODO: optimization: only process the neighborhood block
   //var leftx = centerx - fingerRadius;
   //var lefti = Math.ceil((leftx - sandWidth/2)/sandWidth * (heightMapWidth-1));
   //var rightx = centerx + fingerRadius;
@@ -128,6 +133,7 @@ function poke(x0, z0, r) {
       var oldY = hm[index];
       if (y < oldY) {
         hm[index] = y;
+        displacedVolume += oldY - y;
       }
     }
   }
