@@ -21,6 +21,15 @@ $(function() {
     	debugModeToggle();
     });
     
+    $(document).keyup(function(evt) {
+    if (evt.keyCode == 32) {
+      controls.enable = false;
+    }
+  }).keydown(function(evt) {
+    if (evt.keyCode == 32) {
+      controls.enable = true;
+    }
+  });
     
     // Shows default value
     $('.value').html($('#slider').slider('value'));
@@ -45,7 +54,7 @@ var heightMapWidth = 25; // horizontal vertex count
 var heightMapLength = 25; // lengthwise vertex count
 var hm = new Uint8ClampedArray(heightMapWidth * heightMapLength);
 
-var scene, camera, renderer , sand;
+var scene, camera, controls,renderer , sand;
 var geo;
 var stats;
 
@@ -71,6 +80,11 @@ function init() {
   camera.position.z = 5;
   camera.position.y = 6;
   camera.lookAt(origin);
+  
+  controls = new THREE.OrbitControls(camera);
+  controls.damping = 0.2;
+  controls.enabled = false;
+  
   renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -85,8 +99,8 @@ function init() {
   //checkerBoardTexture.wrapS = checkerBoardTexture.wrapT = THREE.RepeatWrapping;
   //checkerBoardTexture.repeat.set(5,5);
 
-  //var sandMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe:true});
-  sand = new THREE.MeshBasicMaterial({wireframe:true, map: THREE.ImageUtils.loadTexture('hiekka.jpg')}); //TODO ADD DEBUGGING BUTTON FOR WIREFRAME ON/OFF
+  //sand = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe:true});
+  sand = new THREE.MeshBasicMaterial({wireframe:true, map: THREE.ImageUtils.loadTexture('hiekka.jpg')});
   var mesh = new THREE.Mesh(geo, sand);
 
   // mesh.castShadow = true;
@@ -109,10 +123,20 @@ function init() {
   }, false);
 
   // document.addEventListener("drag", onMouseDown, false);
+  
+	$(document).keyup(function(evt) {
+		if (evt.keyCode == 32) {
+	  		controls.enabled = false;
+		}
+	}).keydown(function(evt) {
+		if (evt.keyCode == 32) {
+		  controls.enabled = true;
+		}
+	});
+  
 }
 
 function debugModeToggle(){
-	console.log(sand.wireframe);
 	sand.wireframe = (sand.wireframe == false ? true : false);
 }
 
@@ -123,6 +147,7 @@ function render() {
 	cube.rotation.y += 0.1;
  
 	stats.update();
+	controls.update();
 	renderer.render( scene, camera );
 	requestAnimationFrame( render );
 }
@@ -150,7 +175,7 @@ function poke(centerx, centerz, fingerRadius) {
 
 }
 function onMouseDown( event ) {  
-  
+  if (controls.enabled) return false;
   var vector = new THREE.Vector3();
 
   vector.set(
@@ -170,7 +195,7 @@ function onMouseDown( event ) {
   //console.log("X: "+pos.x.toFixed(4)+" Z: "+pos.z.toFixed(4));
   var hmpos = heightMapPos(pos.x, pos.z);
   //console.log(hmpos);
-  if (25*25 >= hmpos >= 0){
+  if (25*25 > hmpos >= 0){
     hm[hmpos] = 255; //yankee
     updateMesh();
   }
@@ -179,14 +204,20 @@ function onMouseDown( event ) {
 }
 function heightMapPos(x,z){  //this is bad
  
- var magiaa = 12; 
- x +=6; 
- z = Math.round(25*(z + 6)/magiaa)
+	var magiaa = 12; 
+	x +=6; 
+	z = Math.round(25*(z + 6)/magiaa)
+	
 
-
- //console.log("HMAP X: "+x+" Z: "+z);
- return Math.round(25*z) + Math.round(25*x/magiaa) -1;
+	//console.log("HMAP X: "+x+" Z: "+z)
+	x = 25*x/magiaa;
+	if (0<=z && z<=25 && 0<=x && x<=25) return Math.round(25*z) + Math.round(x) -1;
+	else return -1;
+	
 }
+
+
+ 
 
 
 function initHeightmap() {
