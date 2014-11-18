@@ -237,7 +237,6 @@ function init() {
 		} else if (evt.keyCode == 13) {
       // Ykän debugit enterillä
       erode(); // hax, TODO timer
-      console.log("foo");
     }
 	});
 }
@@ -267,8 +266,10 @@ function erode() {
   needsUpdate = true;
 
   // algo description in Sumner (1999) unclear, but best we have
-  var outAngle = 0.436;
-  var liquidity = 0.8;
+  // below implementation contains lots of guesses if not outright bugs
+
+  var outAngle = 0.436; // ~25 degrees
+  var stopAngle = 0.8;  // ~46 degrees; Sumner calls this "liquidity"
   var roughness = 0.2;
 
   // for every cell:
@@ -282,6 +283,10 @@ function erode() {
   // any artifacts from sequential processing?
   // using second array does not appear to make sense
 
+  var delta = 1 / cellsPerUnit;
+  var outThres = delta * Math.tan(outAngle);
+  var stopThres = delta * Math.tan(stopAngle);
+
   var thres = 0.1; // debug threshold, hax
 
   // hax: for now, just skip the edge indices
@@ -293,6 +298,51 @@ function erode() {
       var upIndex = index-heightMapWidth;
       var downIndex = index+heightMapWidth;
 
+      if (hm[index] - hm[leftIndex] > outThres  ||
+          hm[index] - hm[rightIndex] > outThres ||
+          hm[index] - hm[upIndex] > outThres    ||
+          hm[index] - hm[downIndex] > outThres) {
+        var lowerN, diffSum;
+        do {
+          lowerN = 0;
+          diffSum = 0;
+          if (hm[index] - hm[leftIndex] > stopThres) {
+            ++lowerN;
+            diffSum += hm[index] - hm[leftIndex];
+          }
+          if (hm[index] - hm[rightIndex] > stopThres) {
+            ++lowerN;
+            diffSum += hm[index] - hm[rightIndex];
+          }
+          if (hm[index] - hm[upIndex] > stopThres) {
+            ++lowerN;
+            diffSum += hm[index] - hm[upIndex];
+          }
+          if (hm[index] - hm[downIndex] > stopThres) {
+            ++lowerN;
+            diffSum += hm[index] - hm[downIndex];
+          }
+          if (lowerN > 0) {
+            var averageDiff = diffSum / lowerN;
+            var volumeIncrement = averageDiff * roughness;
+            hm[index] -= volumeIncrement * lowerN;
+            if (hm[index] - thres > hm[leftIndex]) {
+              hm[leftIndex] += volumeIncrement;
+            }
+            if (hm[index] - thres > hm[rightIndex]) {
+              hm[rightIndex] += volumeIncrement;
+            }
+            if (hm[index] - thres > hm[upIndex]) {
+              hm[upIndex] += volumeIncrement;
+            }
+            if (hm[index] - thres > hm[downIndex]) {
+              hm[downIndex] += volumeIncrement;
+            }
+          }
+        } while (lowerN > 0);
+      }
+      /*
+      // this works for demoing but isn't the full algo
       var diffSum = 0;
       var lowerN = 0;
       if (hm[index] - thres > hm[leftIndex]) {
@@ -328,6 +378,7 @@ function erode() {
           hm[downIndex] += volumeIncrement;
         }
       }
+      */
     }
   }
 }
