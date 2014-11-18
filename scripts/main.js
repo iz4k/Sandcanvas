@@ -162,15 +162,15 @@ function poke(x0, z0, r) {
   var dx = sandWidth / (heightMapWidth-1);
   var dz = sandLength / (heightMapLength-1);
 
-  // TODO: optimization: only process the neighborhood block
-  //var leftx = centerx - fingerRadius;
-  //var lefti = Math.ceil((leftx - sandWidth/2)/sandWidth * (heightMapWidth-1));
-  //var rightx = centerx + fingerRadius;
-
   var y0 = 0; // sphere center height for now
-
-  for (var i = 0; i < heightMapWidth; ++i) {
-    for (var j = 0; j < heightMapLength; ++j) {
+  
+  var indexXRight, indexXLeft, indexYTop, indexYBottom;
+  indexXRight = heightMapPos(x0+r, z0);
+  indexXLeft = heightMapPos(x0-r, z0);
+  indexYTop = heightMapPos(x0, z0+r);
+  indexYBottom = heightMapPos(x0, z0-r);
+  for (var i = indexXLeft[1]-5; i < indexXRight[1]+5; ++i) {
+    for (var j = indexYBottom[2]-5; j < indexYTop[2]+5; ++j) {
       var index = i + j * heightMapWidth;
       var x = -sandWidth/2 + i * dx;
       var z = -sandLength/2 + j * dz;
@@ -189,7 +189,6 @@ function poke(x0, z0, r) {
   }
   var circumferenceSteps = 40;
   var step = 2*Math.PI / circumferenceSteps;
-  console.log('before for;'+step);
   for (var rad = 0; rad <= 2*Math.PI; rad += step) {
 
     // console.log('in for');
@@ -198,7 +197,7 @@ function poke(x0, z0, r) {
     //index in sand
     var index = heightMapPos(cx, cz);
     // console.log(displacedVolume + ' jonka displacedVolume pitäis olla: ' + (displacedVolume / circumferenceSteps)+' indexissä : '+index);
-    hm[index] += (displacedVolume / circumferenceSteps);
+    hm[index[0]] += (displacedVolume / circumferenceSteps);
   }
 }
 function heightMapPos(x,y){
@@ -207,7 +206,7 @@ function heightMapPos(x,y){
   var iy = (2*y)/sandLength;
   iy = Math.round((iy+1)/2*heightMapLength);
   var index = ix + iy * heightMapWidth;
-  return index;
+  return [index, ix, iy];
 }
 
 function onMouseDown( event ) {
