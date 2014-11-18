@@ -33,8 +33,8 @@ var sandWidth = 10;
 var sandLength = 10;
 
 var initSandHeight = 0.5; // relative value in range [0, 1]
-var heightMapWidth = 25; // horizontal vertex count
-var heightMapLength = 25; // lengthwise vertex count
+var heightMapWidth = 100; // horizontal vertex count
+var heightMapLength = 100; // lengthwise vertex count
 var hm = new Uint8ClampedArray(heightMapWidth * heightMapLength);
 
 var scene, camera, renderer;
@@ -48,7 +48,7 @@ init();
 var geometry = new THREE.BoxGeometry( 1, 1, 1 );
 var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
 var cube = new THREE.Mesh( geometry, material );
-scene.add(cube);
+//scene.add(cube);
 
 render();
 
@@ -76,8 +76,8 @@ function init() {
   var mesh = new THREE.Mesh(geo, sandMaterial);
   scene.add(mesh);
   initHeightmap();
+  poke(0,0,0.5);
   updateMesh();
-  poke(0,0,2);
   document.body.appendChild( renderer.domElement );
   window.addEventListener( 'resize', onWindowResize, false );
 }
@@ -92,7 +92,8 @@ function render() {
 	requestAnimationFrame( render );
 }
 
-function poke(centerx, centerz, fingerRadius) {
+// takes world coordinates
+function poke(x0, z0, r) {
   // btw: will we sanitize the inputs so touches
   // close to sandbox edge are not allowed?
 
@@ -102,14 +103,34 @@ function poke(centerx, centerz, fingerRadius) {
   //   |       (    +    )   |
   //   |                     |
   //   i  i  i  i  i  i  i  i|
+
+  // TODO: optimization: only process the neighborhood block
   var dx = sandWidth / (heightMapWidth-1);
   var dz = sandLength / (heightMapLength-1);
-  var leftx = centerx - fingerRadius;
-  var lefti = Math.ceil((leftx - sandWidth/2)/sandWidth * (heightMapWidth-1));
-//  var rightX = centerX + fingerRadius;
-  var rightx = centerx + fingerRadius;
-  //for (var i = 0; i < )
+  //var leftx = centerx - fingerRadius;
+  //var lefti = Math.ceil((leftx - sandWidth/2)/sandWidth * (heightMapWidth-1));
+  //var rightx = centerx + fingerRadius;
 
+  var y0 = 0.5; // sphere center height for now
+
+  for (var i = 0; i < heightMapWidth; ++i) {
+    for (var j = 0; j < heightMapLength; ++j) {
+      var index = i + j * heightMapWidth;
+      var x = -sandWidth/2 + i * dx;
+      var z = -sandLength/2 + j * dz;
+      // lower half-sphere point height with quadratic formula
+      // var a = 1;
+      var b = -2 * y0;
+      var c = Math.pow(y0,2) - Math.pow(r,2) + Math.pow(x - x0, 2) + Math.pow(z - z0, 2);
+      var y = (-b - Math.sqrt(Math.pow(b,2) - 4*c)) / 2;
+
+      y *= 255;
+      var oldY = hm[index];
+      if (y < oldY) {
+        hm[index] = y;
+      }
+    }
+  }
 }
 
 function initHeightmap() {
