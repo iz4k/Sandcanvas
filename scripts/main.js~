@@ -84,7 +84,7 @@ function init() {
   //checkerBoardTexture.repeat.set(5,5);
 
   //var sandMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe:true});
-  sand = new THREE.MeshBasicMaterial({wireframe:true, map: THREE.ImageUtils.loadTexture('hiekka.jpg')}); //TODO ADD DEBUGGING BUTTON FOR WIREFRAME ON/OFF
+  sand = new THREE.MeshBasicMaterial({name:"sand", wireframe:false, map: THREE.ImageUtils.loadTexture('hiekka.jpg')}); //TODO ADD DEBUGGING BUTTON FOR WIREFRAME ON/OFF
   var mesh = new THREE.Mesh(geo, sand);
 
   // mesh.castShadow = true;
