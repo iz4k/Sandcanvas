@@ -19,7 +19,10 @@ $(function() {
     
     $("#debug").on("click", function(){
     	debugModeToggle();
+    	$("#debug").blur();
+    	
     });
+
 
     // Shows default value
     $('.value').html($('#slider').slider('value'));
@@ -78,7 +81,7 @@ function init() {
   renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
 
-  //var spotLight = new THREE.SpotLight( 0xffffff ); spotLight.position.set( 10, 10, 0 ); spotLight.castShadow = true; spotLight.shadowMapWidth = 1; spotLight.shadowMapHeight = 1; spotLight.shadowCameraNear = 5; spotLight.shadowCameraFar = 40; spotLight.shadowCameraFov = 30; scene.add( spotLight );
+  var spotLight = new THREE.SpotLight( 0xffffff ); spotLight.position.set( 10, 10, 0 ); spotLight.castShadow = true; spotLight.shadowMapWidth = 1; spotLight.shadowMapHeight = 1; spotLight.shadowCameraNear = 5; spotLight.shadowCameraFar = 40; spotLight.shadowCameraFov = 30; scene.add( spotLight );
 
 
   geo = new THREE.PlaneGeometry(sandWidth, sandLength, heightMapWidth-1, heightMapLength-1);
@@ -90,14 +93,14 @@ function init() {
   //checkerBoardTexture.repeat.set(5,5);
 
   //sand = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe:true});
-  sand = new THREE.MeshBasicMaterial({wireframe:true, map: THREE.ImageUtils.loadTexture('hiekka.jpg')});
+  sand = new THREE.MeshPhongMaterial({wireframe:true, map: THREE.ImageUtils.loadTexture('hiekka.jpg')});
   var mesh = new THREE.Mesh(geo, sand);
 
   // mesh.castShadow = true;
   // mesh.receiveShadow = true;
   scene.add(mesh);
   initHeightmap();
-  poke(0,0,0.5);
+  
   updateMesh();
 
   document.body.appendChild( renderer.domElement );
@@ -201,30 +204,18 @@ function onMouseDown( event ) {
   var distance = - camera.position.y / dir.y;
 
   var pos = camera.position.clone().add( dir.multiplyScalar( distance ) ); 
-
-
+  poke(pos.x, pos.z, 0.5);
+  updateMesh();
+  
   //console.log("X: "+pos.x.toFixed(4)+" Z: "+pos.z.toFixed(4));
-  var hmpos = heightMapPos(pos.x, pos.z);
-  //console.log(hmpos);
-  if (25*25 > hmpos >= 0){
-    hm[hmpos] = 255; //yankee
-    updateMesh();
-  }
-    
+//  var hmpos = heightMapPos(pos.x, pos.z);
+//  //console.log(hmpos);
+//  if (25*25 > hmpos >= 0){
+//    hm[hmpos] = 255; //yankee
+//    updateMesh();
+//  }
+//    
 
-}
-function heightMapPos(x,z){  //this is bad
- 
-	var magiaa = 12; 
-	x +=6; 
-	z = Math.round(25*(z + 6)/magiaa)
-	
-
-	//console.log("HMAP X: "+x+" Z: "+z)
-	x = 25*x/magiaa;
-	if (0<=z && z<=25 && 0<=x && x<=25) return Math.round(25*z) + Math.round(x) -1;
-	else return -1;
-	
 }
 
 
@@ -242,8 +233,6 @@ function initHeightmap() {
 
 
 function updateMesh() {
-  hm[110] = 255; // one max height point for testing
-  hm[140] = 0; // and one min height point
   var multiplier = maxSandHeight / 255;
  
 
