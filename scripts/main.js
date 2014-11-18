@@ -12,6 +12,8 @@ $(function() {
     	step:1,
     	slide:function (event, ui) {
     		$('.value').html(ui.value);
+        maxSandHeight = ui.value;
+        updateMesh();
     	}
     });
     
@@ -96,7 +98,17 @@ function init() {
   document.body.appendChild( renderer.domElement );
   window.addEventListener( 'resize', onWindowResize, false );
   
-  document.addEventListener("mousedown", onMouseDown, false);
+  document.addEventListener("mousedown", function(){
+    document.onmousemove = function(e){
+      onMouseDown(e);
+    }
+    this.onmouseup = function() {
+      document.onmousemove = null
+    }
+
+  }, false);
+
+  // document.addEventListener("drag", onMouseDown, false);
 }
 
 function debugModeToggle(){
@@ -165,7 +177,6 @@ function onMouseDown( event ) {
     
 
 }
-
 function heightMapPos(x,z){  //this is bad
  
  var magiaa = 12; 
