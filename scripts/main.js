@@ -195,7 +195,6 @@ function poke(x0, z0, r) {
     var index = heightMapPos(cx, cz);
     // console.log(displacedVolume + ' jonka displacedVolume pitäis olla: ' + (displacedVolume / circumferenceSteps)+' indexissä : '+index);
     hm[index] += (displacedVolume / circumferenceSteps);
-    console.log(hm[index]);
   }
 }
 function heightMapPos(x,y){
