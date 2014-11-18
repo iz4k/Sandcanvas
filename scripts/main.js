@@ -13,7 +13,8 @@ $(function() {
     	slide:function (event, ui) {
     		$('.value').html(ui.value);
         maxSandHeight = ui.value;
-        updateMesh();
+        pokeWidth = ui.value / 10;
+        needsUpdate = true;
     	}
     });
 
@@ -40,6 +41,7 @@ var origin = new THREE.Vector3(0,0,0);
 // world space measurements; sand surface resets to y=0
 var sandWidth = 10;
 var sandLength = 10;
+var pokeWidth = 0.5;
 
 // simulation heightmap
 var cellsPerUnit = 10;
@@ -47,7 +49,12 @@ var heightMapWidth = sandWidth * cellsPerUnit;
 var heightMapLength = sandLength * cellsPerUnit;
 var hm = new Float32Array(heightMapWidth * heightMapLength);
 
+
+var needsUpdate;
+
+
 var scene, camera, controls, renderer, sand;
+
 var geo;
 var stats;
 
@@ -58,58 +65,165 @@ init();
 render();
 
 function init() {
-  stats = new Stats();
-  stats.domElement.style.position = 'absolute';
-  stats.domElement.style.top = '0px';
-  stats.domElement.style.zIndex = 10;
-  document.body.appendChild( stats.domElement );
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-  camera.position.z = 5;
-  camera.position.y = 6;
-  camera.lookAt(origin);
 
-  controls = new THREE.OrbitControls(camera);
-  controls.damping = 0.2;
-  controls.enabled = false;
+	stats = new Stats();
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.top = '0px';
+	stats.domElement.style.zIndex = 10;
+	document.body.appendChild( stats.domElement );
+	scene = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+	camera.position.z = 5;
+	camera.position.y = 6;
+	camera.lookAt(origin);
 
-  renderer = new THREE.WebGLRenderer();
-  renderer.setSize( window.innerWidth, window.innerHeight );
+	controls = new THREE.OrbitControls(camera);
+	controls.damping = 0.2;
+	controls.enabled = false;
 
-  var spotLight = new THREE.SpotLight( 0xffffff ); spotLight.position.set( 10, 10, 0 ); spotLight.castShadow = true; spotLight.shadowMapWidth = 1; spotLight.shadowMapHeight = 1; spotLight.shadowCameraNear = 5; spotLight.shadowCameraFar = 40; spotLight.shadowCameraFov = 30; scene.add( spotLight );
+	renderer = new THREE.WebGLRenderer();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+	geo = new THREE.PlaneGeometry(sandWidth, sandLength, heightMapWidth-1, heightMapLength-1);
+	geo.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+	geo.computeFaceNormals();
+	geo.computeVertexNormals();
+	
+	//var checkerBoardTexture = THREE.ImageUtils.loadTexture("images/white-gray-checkerboard.png");
+	//checkerBoardTexture.wrapS = checkerBoardTexture.wrapT = THREE.RepeatWrapping;
+	//checkerBoardTexture.repeat.set(5,5);
+
+	
+	// LIGHTS
+
+	var spotLight = new THREE.SpotLight( 0xffffff ); 
+	spotLight.position.set( 10, 50, 0 ); 
+	spotLight.castShadow = true; 	
+	scene.add( spotLight );
+	var ambientLight = new THREE.AmbientLight( 0xffffff );
+	scene.add( ambientLight );
+	
+//	var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 ); directionalLight.position.set( 0, 1, 0 ); scene.add( directionalLight );
 
 
-  geo = new THREE.PlaneGeometry(sandWidth, sandLength, heightMapWidth-1, heightMapLength-1);
-  geo.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-  geo.computeFaceNormals();
-  geo.computeVertexNormals();
-  //var checkerBoardTexture = THREE.ImageUtils.loadTexture("images/white-gray-checkerboard.png");
-  //checkerBoardTexture.wrapS = checkerBoardTexture.wrapT = THREE.RepeatWrapping;
-  //checkerBoardTexture.repeat.set(5,5);
 
-  //sand = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe:true});
-  sand = new THREE.MeshPhongMaterial({wireframe:true, map: THREE.ImageUtils.loadTexture('hiekka.jpg')});
-  var mesh = new THREE.Mesh(geo, sand);
+	//SAND
+//	var normalmap = THREE.ImageUtils.loadTexture( "images/normal_map.png");
+//	normalmap.wrapS = normalmap.wrapT = THREE.RepeatWrapping;
+//	normalmap.repeat.set(10,10);
+	var bumpmap = THREE.ImageUtils.loadTexture( "images/bump_map.jpg");
+	bumpmap.wrapS = bumpmap.wrapT = THREE.RepeatWrapping;
+	bumpmap.repeat.set(30,30);
 
-  // mesh.castShadow = true;
-  // mesh.receiveShadow = true;
-  scene.add(mesh);
-  initHeightmap();
+	//sand = new THREE.MeshLambertMaterial({color:0xC2B280});
+	sand = new THREE.MeshPhongMaterial({
+		//map: THREE.ImageUtils.loadTexture('hiekka.jpg'),
+//		normalMap: normalmap,
+//		normalScale: {x:0,y:1,z:0},
+		bumpMap: bumpmap,
+		bumpScale: 0.2,	
+		color: 0xC2B280,   //diffuse
+		
+		specular: 0x6D6C6B,
+		ambient: 0x050505,
+		shininess: 1,
+		reflectivity: 0.1
+		});
+	var mesh = new THREE.Mesh(geo, sand);
 
-  updateMesh();
 
-  document.body.appendChild( renderer.domElement );
-  window.addEventListener( 'resize', onWindowResize, false );
+	mesh.castShadow = true;
+	mesh.receiveShadow = true;
+	scene.add(mesh);
+	
+	
+//	var ambient = 0x050505, diffuse = 0x331100, specular = 0xffffff, shininess = 10, scale = 1;
 
-  document.addEventListener("mousedown", function(){
-    document.onmousemove = function(e){
-      onMouseDown(e);
-    }
-    this.onmouseup = function() {
-      document.onmousemove = null
-    }
+//	// normal map shader
 
-  }, false);
+//	var shader = THREE.ShaderLib[ "normalmap" ];
+//	var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
+
+//	//uniforms[ "enableAO" ].value = true;
+//	uniforms[ "enableDiffuse" ].value = false;
+//	uniforms[ "enableSpecular" ].value = false;
+//	//uniforms[ "enableReflection" ].value = true;
+//	//uniforms[ "enableDisplacement" ].value = true;
+
+//	uniforms[ "tNormal" ].value = normalmap;
+//	//uniforms[ "tAO" ].value = THREE.ImageUtils.loadTexture( "textures/normal/ninja/ao.jpg" );
+
+//	//uniforms[ "tDisplacement" ].value = THREE.ImageUtils.loadTexture( "textures/normal/ninja/displacement.jpg" );
+//	//uniforms[ "uDisplacementBias" ].value = - 0.428408;
+//	//uniforms[ "uDisplacementScale" ].value = 2.436143;
+
+//	uniforms[ "uNormalScale" ].value.y = -1;
+
+//	uniforms[ "diffuse" ].value.setHex( diffuse );
+//	uniforms[ "specular" ].value.setHex( specular );
+//	uniforms[ "ambient" ].value.setHex( ambient );
+
+//	uniforms[ "shininess" ].value = shininess;
+
+//	//uniforms[ "tCube" ].value = reflectionCube;
+//	uniforms[ "reflectivity" ].value = 0.1;
+
+//	uniforms[ "diffuse" ].value.convertGammaToLinear();
+//	uniforms[ "specular" ].value.convertGammaToLinear();
+//	uniforms[ "ambient" ].value.convertGammaToLinear();
+
+
+//	var parameters = { fragmentShader: shader.fragmentShader, vertexShader: shader.vertexShader, uniforms: uniforms, lights: true, fog: false };
+//	var material1 = new THREE.ShaderMaterial( parameters );
+
+//	var material2 = new THREE.MeshPhongMaterial( {
+//		color: diffuse,
+//		specular: specular,
+//		ambient: ambient,
+//		shininess: shininess,
+//		normalMap: uniforms[ "tNormal" ].value,
+//		normalScale: uniforms[ "uNormalScale" ].value,
+//		combine: THREE.MixOperation,
+//		reflectivity: 0.1
+//	} );
+
+//	//
+
+//	
+//	var mesh1 = new THREE.Mesh( geo, material1 );
+//	//mesh1.position.x = - scale * 12;
+//	mesh1.scale.set( scale, scale, scale );
+//	mesh1.castShadow = true;
+//	mesh1.receiveShadow = true;
+//	scene.add( mesh1 );
+
+//	var mesh2 = new THREE.Mesh( geo, material2 );
+//	//mesh2.position.x = scale * 12;
+//	mesh2.scale.set( scale, scale, scale );
+//	mesh2.castShadow = true;
+//	mesh2.receiveShadow = true;
+//	scene.add( mesh2 );
+
+	
+	//OTHER STUFF
+	
+	initHeightmap();
+
+	needsUpdate = true;
+	
+
+	document.body.appendChild( renderer.domElement );
+	window.addEventListener( 'resize', onWindowResize, false );
+
+	document.addEventListener("mousedown", function(){
+		document.onmousemove = function(e){
+		  	onMouseDown(e);
+		}
+		this.onmouseup = function() {
+		  	document.onmousemove = null
+	}
+	}, false);
+
 
   // document.addEventListener("drag", onMouseDown, false);
 
@@ -136,7 +250,19 @@ function render() {
   var delta = clock.getDelta();
   var time = clock.getElapsedTime() * 10;
 
+<<<<<<< HEAD
 
+||||||| merged common ancestors
+=======
+ 	
+ 	if (needsUpdate){
+ 		updateMesh();
+	 	geo.computeFaceNormals();
+		geo.computeVertexNormals();
+		
+	}
+
+>>>>>>> FETCH_HEAD
 	stats.update();
 	controls.update();
 	renderer.render( scene, camera );
@@ -290,9 +416,11 @@ function onMouseDown( event ) {
 
   var distance = - camera.position.y / dir.y;
 
-  var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
-  poke(pos.x, pos.z, 0.5);
-  updateMesh();
+
+  var pos = camera.position.clone().add( dir.multiplyScalar( distance ) ); 
+  poke(pos.x, pos.z, pokeWidth);
+  needsUpdate = true;
+  
 
   //console.log("X: "+pos.x.toFixed(4)+" Z: "+pos.z.toFixed(4));
 //  var hmpos = heightMapPos(pos.x, pos.z);
@@ -318,6 +446,8 @@ function updateMesh() {
 
   }
   geo.verticesNeedUpdate = true;
+  geo.normalsNeedUpdate = true; 
+  needsUpdate = false;
   /*
   for (var i = 0; i < heightMapWidth; ++i) {
     for (var j = 0; j < heightMapLength; ++j) {
