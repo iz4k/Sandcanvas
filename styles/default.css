@@ -17,6 +17,7 @@ h1{
 canvas{
 	height:100%;
 	width:100%;
+
 }
 /*	Ui element box styles  */
 .ui{
@@ -49,4 +50,11 @@ canvas{
 }
 .ui-slider-horizontal{
 	height: 0em;
+}
+
+
+#debug{
+	
+	margin:1em 0em;	
+
 }

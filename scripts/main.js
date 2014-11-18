@@ -12,8 +12,15 @@ $(function() {
     	step:1,
     	slide:function (event, ui) {
     		$('.value').html(ui.value);
+        maxSandHeight = ui.value;
+        updateMesh();
     	}
     });
+    
+    $("#debug").on("click", function(){
+    	debugModeToggle();
+    });
+
     // Shows default value
     $('.value').html($('#slider').slider('value'));
  });
@@ -37,7 +44,7 @@ var heightMapWidth = 100; // horizontal vertex count
 var heightMapLength = 100; // lengthwise vertex count
 var hm = new Uint8ClampedArray(heightMapWidth * heightMapLength);
 
-var scene, camera, renderer;
+var scene, camera, controls,renderer , sand;
 var geo;
 var stats;
 
@@ -63,8 +70,17 @@ function init() {
   camera.position.z = 5;
   camera.position.y = 6;
   camera.lookAt(origin);
+  
+  controls = new THREE.OrbitControls(camera);
+  controls.damping = 0.2;
+  controls.enabled = false;
+  
   renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
+
+  //var spotLight = new THREE.SpotLight( 0xffffff ); spotLight.position.set( 10, 10, 0 ); spotLight.castShadow = true; spotLight.shadowMapWidth = 1; spotLight.shadowMapHeight = 1; spotLight.shadowCameraNear = 5; spotLight.shadowCameraFar = 40; spotLight.shadowCameraFov = 30; scene.add( spotLight );
+
+
   geo = new THREE.PlaneGeometry(sandWidth, sandLength, heightMapWidth-1, heightMapLength-1);
   geo.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
   geo.computeFaceNormals();
@@ -72,16 +88,49 @@ function init() {
   //var checkerBoardTexture = THREE.ImageUtils.loadTexture("images/white-gray-checkerboard.png");
   //checkerBoardTexture.wrapS = checkerBoardTexture.wrapT = THREE.RepeatWrapping;
   //checkerBoardTexture.repeat.set(5,5);
-  var sandMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe:true});
-  var mesh = new THREE.Mesh(geo, sandMaterial);
+
+  //sand = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe:true});
+  sand = new THREE.MeshBasicMaterial({wireframe:true, map: THREE.ImageUtils.loadTexture('hiekka.jpg')});
+  var mesh = new THREE.Mesh(geo, sand);
+
+  // mesh.castShadow = true;
+  // mesh.receiveShadow = true;
   scene.add(mesh);
   initHeightmap();
   poke(0,0, 0.5);
   poke(0.8, 0.2, 0.5);
   poke(-2, 3, 1);
   updateMesh();
+
   document.body.appendChild( renderer.domElement );
   window.addEventListener( 'resize', onWindowResize, false );
+  
+  document.addEventListener("mousedown", function(){
+    document.onmousemove = function(e){
+      onMouseDown(e);
+    }
+    this.onmouseup = function() {
+      document.onmousemove = null
+    }
+
+  }, false);
+
+  // document.addEventListener("drag", onMouseDown, false);
+  
+	$(document).keyup(function(evt) {
+		if (evt.keyCode == 32) {
+	  		controls.enabled = false;
+		}
+	}).keydown(function(evt) {
+		if (evt.keyCode == 32) {
+		  controls.enabled = true;
+		}
+	});
+  
+}
+
+function debugModeToggle(){
+	sand.wireframe = (sand.wireframe == false ? true : false);
 }
 
 function render() {
@@ -89,13 +138,17 @@ function render() {
   var time = clock.getElapsedTime() * 10;
 	cube.rotation.x += 0.1;
 	cube.rotation.y += 0.1;
+ 
 	stats.update();
+	controls.update();
 	renderer.render( scene, camera );
 	requestAnimationFrame( render );
 }
 
+
 // takes world coordinates
 function poke(x0, z0, r) {
+
   // btw: will we sanitize the inputs so touches
   // close to sandbox edge are not allowed?
 
@@ -138,22 +191,73 @@ function poke(x0, z0, r) {
     }
   }
 }
+function onMouseDown( event ) {  
+  if (controls.enabled) return false;
+  var vector = new THREE.Vector3();
+
+  vector.set(
+      ( event.clientX / window.innerWidth ) * 2 - 1,
+      - ( event.clientY / window.innerHeight ) * 2 + 1,
+      0.5 );
+
+  vector.unproject( camera );
+  
+  var dir = vector.sub( camera.position ).normalize();
+
+  var distance = - camera.position.y / dir.y;
+
+  var pos = camera.position.clone().add( dir.multiplyScalar( distance ) ); 
+
+
+  //console.log("X: "+pos.x.toFixed(4)+" Z: "+pos.z.toFixed(4));
+  var hmpos = heightMapPos(pos.x, pos.z);
+  //console.log(hmpos);
+  if (25*25 > hmpos >= 0){
+    hm[hmpos] = 255; //yankee
+    updateMesh();
+  }
+    
+
+}
+function heightMapPos(x,z){  //this is bad
+ 
+	var magiaa = 12; 
+	x +=6; 
+	z = Math.round(25*(z + 6)/magiaa)
+	
+
+	//console.log("HMAP X: "+x+" Z: "+z)
+	x = 25*x/magiaa;
+	if (0<=z && z<=25 && 0<=x && x<=25) return Math.round(25*z) + Math.round(x) -1;
+	else return -1;
+	
+}
+
+
+ 
+
 
 function initHeightmap() {
   var level = initSandHeight * 255;
   for (var i = 0, len = hm.length; i < len; ++i) {
     hm[i] = level;
+
   }
+
 }
 
+
 function updateMesh() {
-  hm[30] = 255; // one max height point for testing
-  hm[2520] = 0; // and one min height point
+  hm[110] = 255; // one max height point for testing
+  hm[140] = 0; // and one min height point
   var multiplier = maxSandHeight / 255;
+ 
 
   for (var i = 0, len = hm.length; i < len; ++i) {
     geo.vertices[i].y = hm[i] * multiplier;
+
   }
+  geo.verticesNeedUpdate = true;
   /*
   for (var i = 0; i < heightMapWidth; ++i) {
     for (var j = 0; j < heightMapLength; ++j) {
