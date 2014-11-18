@@ -120,9 +120,12 @@ function init() {
 	}).keydown(function(evt) {
 		if (evt.keyCode == 32) {
 		  controls.enabled = true;
-		}
+		} else if (evt.keyCode == 13) {
+      // Ykän debugit enterillä
+      erode(); // hax, TODO timer
+      console.log("foo");
+    }
 	});
-
 }
 
 function debugModeToggle(){
@@ -133,6 +136,7 @@ function render() {
   var delta = clock.getDelta();
   var time = clock.getElapsedTime() * 10;
 
+
 	stats.update();
 	controls.update();
 	renderer.render( scene, camera );
@@ -140,8 +144,70 @@ function render() {
 }
 
 function erode() {
+  // algo description in Sumner (1999) unclear, but best we have
+  var outAngle = 0.436;
   var liquidity = 0.8;
   var roughness = 0.2;
+
+  // for every cell:
+  //   if neighbors lower than out-threshold:
+  //     repeat until no neighbors lower than stop-threshold:
+  //       accumulate differences to neighbors lower than threshold, take average
+  //       move (average * roughness) to all (still???) lower neighbors
+  //
+  // open questions:
+  //
+  // any artifacts from sequential processing?
+  // using second array does not appear to make sense
+
+  var thres = 0.4; // debug threshold, hax
+
+  // hax: for now, just skip the edge indices
+  for (var i=1; i<heightMapWidth-1; ++i) {
+    for (var j=1; j<heightMapLength-1; ++j) {
+      var index = i + j * heightMapWidth;
+      var leftIndex = index-1;
+      var rightIndex = index+1;
+      var upIndex = index-heightMapWidth;
+      var downIndex = index+heightMapWidth;
+
+      var diffSum = 0;
+      var lowerN = 0;
+      if (hm[index] - thres > hm[leftIndex]) {
+        ++lowerN;
+        diffSum = hm[index] - hm[leftIndex];
+      }
+      if (hm[index] - thres > hm[rightIndex]) {
+        ++lowerN;
+        diffSum = hm[index] - hm[rightIndex];
+      }
+      if (hm[index] - thres > hm[upIndex]) {
+        ++lowerN;
+        diffSum = hm[index] - hm[upIndex];
+      }
+      if (hm[index] - thres > hm[downIndex]) {
+        ++lowerN;
+        diffSum = hm[index] - hm[downIndex];
+      }
+      if (lowerN > 0) {
+        var averageDiff = diffSum / lowerN;
+        var volumeIncrement = averageDiff * roughness;
+        hm[index] -= volumeIncrement * lowerN;
+        if (hm[index] - thres > hm[leftIndex]) {
+          hm[leftIndex] += volumeIncrement;
+        }
+        if (hm[index] - thres > hm[rightIndex]) {
+          hm[rightIndex] += volumeIncrement;
+        }
+        if (hm[index] - thres > hm[upIndex]) {
+          hm[upIndex] += volumeIncrement;
+        }
+        if (hm[index] - thres > hm[downIndex]) {
+          hm[downIndex] += volumeIncrement;
+        }
+      }
+    }
+  }
 }
 
 // takes world coordinates
@@ -163,7 +229,7 @@ function poke(x0, z0, r) {
   var dz = sandLength / (heightMapLength-1);
 
   var y0 = 0; // sphere center height for now
-  
+
   var indexXRight, indexXLeft, indexYTop, indexYBottom;
   indexXRight = heightMapPos(x0+r, z0);
   indexXLeft = heightMapPos(x0-r, z0);
