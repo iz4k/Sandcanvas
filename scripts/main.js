@@ -249,6 +249,8 @@ function render() {
   var delta = clock.getDelta();
   var time = clock.getElapsedTime() * 10;
 
+  erode();
+
  	if (needsUpdate){
  		updateMesh();
 	 	geo.computeFaceNormals();
