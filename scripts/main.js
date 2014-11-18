@@ -17,11 +17,11 @@ $(function() {
         needsUpdate = true;
     	}
     });
-    
+
     $("#debug").on("click", function(){
     	debugModeToggle();
     	$("#debug").blur();
-    	
+
     });
 
 
@@ -38,20 +38,23 @@ $(function() {
 
 var origin = new THREE.Vector3(0,0,0);
 
-// absolute scales for visualization; no effect on simulation
-var maxSandHeight = 1;
+// world space measurements; sand surface resets to y=0
 var sandWidth = 10;
 var sandLength = 10;
 var pokeWidth = 0.5;
 
-var initSandHeight = 0.5; // relative value in range [0, 1]
-var heightMapWidth = 100; // horizontal vertex count
-var heightMapLength = 100; // lengthwise vertex count
-var hm = new Uint8ClampedArray(heightMapWidth * heightMapLength);
+// simulation heightmap
+var cellsPerUnit = 10;
+var heightMapWidth = sandWidth * cellsPerUnit;
+var heightMapLength = sandLength * cellsPerUnit;
+var hm = new Float32Array(heightMapWidth * heightMapLength);
+
 
 var needsUpdate;
 
-var scene, camera, controls,renderer , sand;
+
+var scene, camera, controls, renderer, sand;
+
 var geo;
 var stats;
 
@@ -59,14 +62,10 @@ var clock = new THREE.Clock();
 
 init();
 
-var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-var cube = new THREE.Mesh( geometry, material );
-//scene.add(cube);
-
 render();
 
 function init() {
+
 	stats = new Stats();
 	stats.domElement.style.position = 'absolute';
 	stats.domElement.style.top = '0px';
@@ -84,7 +83,6 @@ function init() {
 
 	renderer = new THREE.WebGLRenderer();
 	renderer.setSize( window.innerWidth, window.innerHeight );
-
 
 	geo = new THREE.PlaneGeometry(sandWidth, sandLength, heightMapWidth-1, heightMapLength-1);
 	geo.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
@@ -226,8 +224,9 @@ function init() {
 	}
 	}, false);
 
+
   // document.addEventListener("drag", onMouseDown, false);
-  
+
 	$(document).keyup(function(evt) {
 		if (evt.keyCode == 32) {
 	  		controls.enabled = false;
@@ -237,7 +236,7 @@ function init() {
 		  controls.enabled = true;
 		}
 	});
-  
+
 }
 
 function debugModeToggle(){
@@ -247,8 +246,7 @@ function debugModeToggle(){
 function render() {
   var delta = clock.getDelta();
   var time = clock.getElapsedTime() * 10;
-	cube.rotation.x += 0.1;
-	cube.rotation.y += 0.1;
+
  	
  	if (needsUpdate){
  		updateMesh();
@@ -256,6 +254,7 @@ function render() {
 		geo.computeVertexNormals();
 		
 	}
+
 	stats.update();
 	controls.update();
 	renderer.render( scene, camera );
@@ -276,20 +275,20 @@ function poke(x0, z0, r) {
   //   |                     |
   //   i  i  i  i  i  i  i  i|
 
-  var displacedVolume;
+  var displacedVolume = 0;
 
   var dx = sandWidth / (heightMapWidth-1);
   var dz = sandLength / (heightMapLength-1);
 
-  // TODO: optimization: only process the neighborhood block
-  //var leftx = centerx - fingerRadius;
-  //var lefti = Math.ceil((leftx - sandWidth/2)/sandWidth * (heightMapWidth-1));
-  //var rightx = centerx + fingerRadius;
-
-  var y0 = 0.5; // sphere center height for now
-
-  for (var i = 0; i < heightMapWidth; ++i) {
-    for (var j = 0; j < heightMapLength; ++j) {
+  var y0 = 0; // sphere center height for now
+  
+  var indexXRight, indexXLeft, indexYTop, indexYBottom;
+  indexXRight = heightMapPos(x0+r, z0);
+  indexXLeft = heightMapPos(x0-r, z0);
+  indexYTop = heightMapPos(x0, z0+r);
+  indexYBottom = heightMapPos(x0, z0-r);
+  for (var i = indexXLeft[1]-5; i < indexXRight[1]+5; ++i) {
+    for (var j = indexYBottom[2]-5; j < indexYTop[2]+5; ++j) {
       var index = i + j * heightMapWidth;
       var x = -sandWidth/2 + i * dx;
       var z = -sandLength/2 + j * dz;
@@ -299,7 +298,6 @@ function poke(x0, z0, r) {
       var c = Math.pow(y0,2) - Math.pow(r,2) + Math.pow(x - x0, 2) + Math.pow(z - z0, 2);
       var y = (-b - Math.sqrt(Math.pow(b,2) - 4*c)) / 2;
 
-      y *= 255;
       var oldY = hm[index];
       if (y < oldY) {
         hm[index] = y;
@@ -307,8 +305,29 @@ function poke(x0, z0, r) {
       }
     }
   }
+  var circumferenceSteps = 40;
+  var step = 2*Math.PI / circumferenceSteps;
+  for (var rad = 0; rad <= 2*Math.PI; rad += step) {
+
+    // console.log('in for');
+    var cx = x0 + r * Math.cos(rad);
+    var cz = z0 + r * Math.sin(rad);
+    //index in sand
+    var index = heightMapPos(cx, cz);
+    // console.log(displacedVolume + ' jonka displacedVolume pitäis olla: ' + (displacedVolume / circumferenceSteps)+' indexissä : '+index);
+    hm[index[0]] += (displacedVolume / circumferenceSteps);
+  }
 }
-function onMouseDown( event ) {  
+function heightMapPos(x,y){
+  var ix = (2*x)/sandWidth;
+  ix = Math.round((ix+1)/2*heightMapWidth);
+  var iy = (2*y)/sandLength;
+  iy = Math.round((iy+1)/2*heightMapLength);
+  var index = ix + iy * heightMapWidth;
+  return [index, ix, iy];
+}
+
+function onMouseDown( event ) {
   if (controls.enabled) return false;
   var vector = new THREE.Vector3();
 
@@ -318,15 +337,17 @@ function onMouseDown( event ) {
       0.5 );
 
   vector.unproject( camera );
-  
+
   var dir = vector.sub( camera.position ).normalize();
 
   var distance = - camera.position.y / dir.y;
+
 
   var pos = camera.position.clone().add( dir.multiplyScalar( distance ) ); 
   poke(pos.x, pos.z, pokeWidth);
   needsUpdate = true;
   
+
   //console.log("X: "+pos.x.toFixed(4)+" Z: "+pos.z.toFixed(4));
 //  var hmpos = heightMapPos(pos.x, pos.z);
 //  //console.log(hmpos);
@@ -334,30 +355,20 @@ function onMouseDown( event ) {
 //    hm[hmpos] = 255; //yankee
 //    updateMesh();
 //  }
-//    
+//
 
 }
 
-
- 
-
-
 function initHeightmap() {
-  var level = initSandHeight * 255;
   for (var i = 0, len = hm.length; i < len; ++i) {
-    hm[i] = level;
-
+    hm[i] = 0;
   }
-
 }
 
 
 function updateMesh() {
-  var multiplier = maxSandHeight / 255;
- 
-
   for (var i = 0, len = hm.length; i < len; ++i) {
-    geo.vertices[i].y = hm[i] * multiplier;
+    geo.vertices[i].y = hm[i];
 
   }
   geo.verticesNeedUpdate = true;
