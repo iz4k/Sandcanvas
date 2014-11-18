@@ -160,7 +160,7 @@ function poke(x0, z0, r) {
   //   |                     |
   //   i  i  i  i  i  i  i  i|
 
-  var displacedVolume;
+  var displacedVolume = 0;
 
   var dx = sandWidth / (heightMapWidth-1);
   var dz = sandLength / (heightMapLength-1);
@@ -191,6 +191,28 @@ function poke(x0, z0, r) {
       }
     }
   }
+  var circumferenceSteps = 40;
+  var step = 2*Math.PI / circumferenceSteps;
+  var cx, cz, ix, iy;
+  console.log('before for;'+step);
+  for (var rad = 0; rad <= 2*Math.PI; rad += step) {
+
+    // console.log('in for');
+    cx = x0 + r * Math.cos(rad);
+    cz = z0 + r * Math.sin(rad);
+    //index in sand
+    ix = (2*cx)/sandWidth;
+    ix = Math.round((ix+1)/2*heightMapWidth);
+    iy = (2*cz)/sandLength;
+    iy = Math.round((iy+1)/2*heightMapLength);
+    var index = ix + iy * heightMapWidth;
+    // console.log(displacedVolume + ' jonka displacedVolume pitäis olla: ' + (displacedVolume / circumferenceSteps)+' indexissä : '+index);
+    hm[index] += (displacedVolume / circumferenceSteps);
+    console.log(hm[index]);
+  }
+}
+function heightMapPos(x,y){
+
 }
 function onMouseDown( event ) {  
   if (controls.enabled) return false;
@@ -228,6 +250,7 @@ function onMouseDown( event ) {
 
 function initHeightmap() {
   var level = initSandHeight * 255;
+
   for (var i = 0, len = hm.length; i < len; ++i) {
     hm[i] = level;
 
