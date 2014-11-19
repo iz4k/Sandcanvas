@@ -236,7 +236,6 @@ function init() {
 		  controls.enabled = true;
 		} else if (evt.keyCode == 13) {
       // Ykän debugit enterillä
-      erode(); // hax, TODO timer
     }
 	});
 }
@@ -267,29 +266,27 @@ function render() {
 function erode() {
   needsUpdate = true;
 
-  // algo description in Sumner (1999) unclear, but best we have
-  // below implementation contains lots of guesses if not outright bugs
+  // sand erosion from Sumner (1999)
 
-  var outAngle = 0.436; // ~25 degrees
-  var stopAngle = 0.8;  // ~46 degrees; Sumner calls this "liquidity"
+  // could probably get better quality with 8-way neighbors,
+  // but this is already murder for performance... any
+  // real optimizations available?
+
+  var outAngle = 0.436; // Sumner: ~25 degrees
+  outAngle = 0.8; // randomtuning
+  var stopAngle = 0.8;  // Sumner: ~46 degrees; Sumner calls this "liquidity"
+  stopAngle = 1.0; // randomtuning
   var roughness = 0.2;
 
   // for every cell:
-  //   if neighbors lower than out-threshold:
-  //     repeat until no neighbors lower than stop-threshold:
-  //       accumulate differences to neighbors lower than threshold, take average
-  //       move (average * roughness) to all (still???) lower neighbors
-  //
-  // open questions:
-  //
-  // any artifacts from sequential processing?
-  // using second array does not appear to make sense
+  //   select neighbors lower than out-threshold
+  //   take average of differences with those neighbors
+  //   move (average * roughness) from current cell to those neighbors
+  //   repeat all of the above as long as there are neighbors lower than stop-threshold
 
   var delta = 1 / cellsPerUnit;
   var outThres = delta * Math.tan(outAngle);
   var stopThres = delta * Math.tan(stopAngle);
-
-  var thres = 0.1; // debug threshold, hax
 
   // hax: for now, just skip the edge indices
   for (var i=1; i<heightMapWidth-1; ++i) {
@@ -300,87 +297,53 @@ function erode() {
       var upIndex = index-heightMapWidth;
       var downIndex = index+heightMapWidth;
 
-      if (hm[index] - hm[leftIndex] > outThres  ||
-          hm[index] - hm[rightIndex] > outThres ||
-          hm[index] - hm[upIndex] > outThres    ||
-          hm[index] - hm[downIndex] > outThres) {
-        var lowerN, diffSum;
-        do {
-          lowerN = 0;
-          diffSum = 0;
-          if (hm[index] - hm[leftIndex] > stopThres) {
-            ++lowerN;
-            diffSum += hm[index] - hm[leftIndex];
-          }
-          if (hm[index] - hm[rightIndex] > stopThres) {
-            ++lowerN;
-            diffSum += hm[index] - hm[rightIndex];
-          }
-          if (hm[index] - hm[upIndex] > stopThres) {
-            ++lowerN;
-            diffSum += hm[index] - hm[upIndex];
-          }
-          if (hm[index] - hm[downIndex] > stopThres) {
-            ++lowerN;
-            diffSum += hm[index] - hm[downIndex];
-          }
-          if (lowerN > 0) {
-            var averageDiff = diffSum / lowerN;
-            var volumeIncrement = averageDiff * roughness;
-            hm[index] -= volumeIncrement * lowerN;
-            if (hm[index] - thres > hm[leftIndex]) {
-              hm[leftIndex] += volumeIncrement;
-            }
-            if (hm[index] - thres > hm[rightIndex]) {
-              hm[rightIndex] += volumeIncrement;
-            }
-            if (hm[index] - thres > hm[upIndex]) {
-              hm[upIndex] += volumeIncrement;
-            }
-            if (hm[index] - thres > hm[downIndex]) {
-              hm[downIndex] += volumeIncrement;
-            }
-          }
-        } while (lowerN > 0);
-      }
-      /*
-      // this works for demoing but isn't the full algo
-      var diffSum = 0;
-      var lowerN = 0;
-      if (hm[index] - thres > hm[leftIndex]) {
-        ++lowerN;
-        diffSum = hm[index] - hm[leftIndex];
-      }
-      if (hm[index] - thres > hm[rightIndex]) {
-        ++lowerN;
-        diffSum = hm[index] - hm[rightIndex];
-      }
-      if (hm[index] - thres > hm[upIndex]) {
-        ++lowerN;
-        diffSum = hm[index] - hm[upIndex];
-      }
-      if (hm[index] - thres > hm[downIndex]) {
-        ++lowerN;
-        diffSum = hm[index] - hm[downIndex];
-      }
-      if (lowerN > 0) {
-        var averageDiff = diffSum / lowerN;
-        var volumeIncrement = averageDiff * roughness;
-        hm[index] -= volumeIncrement * lowerN;
-        if (hm[index] - thres > hm[leftIndex]) {
-          hm[leftIndex] += volumeIncrement;
+      var lowerN, diffSum;
+      do {
+        lowerN = 0;
+        diffSum = 0;
+        var height = hm[index];
+        var diffLeft = height - hm[leftIndex];
+        var diffRight = height - hm[rightIndex];
+        var diffUp = height - hm[upIndex];
+        var diffDown = height - hm[downIndex];
+        if (diffLeft > outThres) {
+          ++lowerN;
+          diffSum += diffLeft;
         }
-        if (hm[index] - thres > hm[rightIndex]) {
-          hm[rightIndex] += volumeIncrement;
+        if (diffRight > outThres) {
+          ++lowerN;
+          diffSum += diffRight;
         }
-        if (hm[index] - thres > hm[upIndex]) {
-          hm[upIndex] += volumeIncrement;
+        if (diffUp > outThres) {
+          ++lowerN;
+          diffSum += diffUp;
         }
-        if (hm[index] - thres > hm[downIndex]) {
-          hm[downIndex] += volumeIncrement;
+        if (diffDown > outThres) {
+          ++lowerN;
+          diffSum += diffDown;
         }
-      }
-      */
+        if (lowerN > 0) {
+          var averageDiff = diffSum / lowerN;
+          var volumeIncrement = averageDiff * roughness;
+          hm[index] -= volumeIncrement * lowerN;
+          if (diffLeft > outThres) {
+            hm[leftIndex] += volumeIncrement;
+          }
+          if (diffRight > outThres) {
+            hm[rightIndex] += volumeIncrement;
+          }
+          if (diffUp > outThres) {
+            hm[upIndex] += volumeIncrement;
+          }
+          if (diffDown > outThres) {
+            hm[downIndex] += volumeIncrement;
+          }
+        }
+        height = hm[index];
+      } while (height - hm[leftIndex] > stopThres  ||
+               height - hm[rightIndex] > stopThres ||
+               height - hm[upIndex] > stopThres    ||
+               height - hm[downIndex] > stopThres);
     }
   }
 }
