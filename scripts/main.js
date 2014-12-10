@@ -491,3 +491,9 @@ function onWindowResize() {
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
 }
+
+$('.toggleUi').click(function(event) {
+  var txt = $(".ui .controls").hasClass('closed') ? 'Hide controls' : 'Show controls';
+   $(".toggleUi").text(txt);
+  $('.ui .controls').toggleClass('closed');
+}); 
