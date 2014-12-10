@@ -6,13 +6,13 @@
  */
 $(function() {
     $( "#slider" ).slider({
-    	value:1,
+    	value:5,
     	min:0,
     	max:10,
     	step:1,
     	slide:function (event, ui) {
     		$('.value').html(ui.value);
-        maxSandHeight = ui.value;
+        // maxSandHeight = ui.value;
         pokeWidth = ui.value / 10;
         needsUpdate = true;
     	}
@@ -448,7 +448,6 @@ function onMouseDown( event , device) {
       - (event.touches[0].pageY/window.innerHeight)*2 +1 ,
       0.5 );
   }
-  console.log(vector);
   vector.unproject( camera );
 
   var dir = vector.sub( camera.position ).normalize();
