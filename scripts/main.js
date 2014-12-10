@@ -232,7 +232,9 @@ function init() {
 
 
   // document.addEventListener("drag", onMouseDown, false);
-
+$('#camera').click(function(event) {
+  controls.enabled = !controls.enabled;
+});
 	$(document).keyup(function(evt) {
 		if (evt.keyCode == 32) {
 	  		controls.enabled = false;
