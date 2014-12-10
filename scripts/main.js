@@ -236,6 +236,7 @@ function init() {
 		  controls.enabled = true;
 		} else if (evt.keyCode == 13) {
       // Ykän debugit enterillä
+      console.log("mousedown: " + debugmousedown + " extrapokes: " + debugpokes);
     }
 	});
 }
@@ -244,13 +245,17 @@ function debugModeToggle(){
 	sand.wireframe = (sand.wireframe == false ? true : false);
 }
 
+var normalTickInterval = 1 / 30; // max 30 times/s
+var normalTickCounter = 0;
+
 function render() {
-  var delta = clock.getDelta();
-  var time = clock.getElapsedTime() * 10;
+  normalTickCounter += clock.getDelta();
+  // var time = clock.getElapsedTime(); // seconds since clock started
 
   erode();
 
- 	if (needsUpdate){
+ 	if (needsUpdate && normalTickCounter > normalTickInterval){
+    normalTickCounter -= normalTickInterval;
  		updateMesh();
 	 	geo.computeFaceNormals();
 		geo.computeVertexNormals();
@@ -413,6 +418,13 @@ function heightMapPos(x,y){
   return [index, ix, iy];
 }
 
+
+var lastPokePosition = new THREE.Vector2();
+
+var lastPokeTime;
+var debugmousedown = 0;
+var debugpokes = 0;
+
 function onMouseDown( event ) {
   if (controls.enabled) return false;
   var vector = new THREE.Vector3();
@@ -428,9 +440,49 @@ function onMouseDown( event ) {
 
   var distance = - camera.position.y / dir.y;
 
-
   var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+
+  // we don't always get inputs smoothly from the browser
+  // (at least mouse -- what happens with touch/multitouch???)
+  // so we have to check if the browser skipped over a too-large
+  // interval and generate virtual inputs to keep appearance of
+  // continuous digging
+
+  var pokePosition = new THREE.Vector2(pos.x, pos.z);
+
+  var extraPokeTriggerTime = 0.1; // seconds
+  var extraPokeDensity = pokeWidth / 3;
+  var extraPokeTriggerDistance = extraPokeDensity;
+
+  var pokeTime = clock.getElapsedTime();
+  debugmousedown += 1;
+
+  // no virtual inputs on very first input
+  if (lastPokePosition.lengthSq() > 0.000001) {
+    debugpokes += 1;
+
+    var posDelta = new THREE.Vector2();
+    posDelta.subVectors(pokePosition, lastPokePosition);
+    var pokeDistance = posDelta.length();
+    // TODO: adjust multiplier, optimize with lengthSqr, adjust extrapokes
+    if (pokeDistance > extraPokeTriggerDistance) {
+      if (pokeTime - lastPokeTime < extraPokeTriggerTime) {
+        var extraPokes = Math.floor(pokeDistance / extraPokeDensity);
+        posDelta.multiplyScalar(1 / extraPokes);
+        for (var i = 1; i < extraPokes; ++i) {
+          var newPos = posDelta.clone();
+          newPos.multiplyScalar(i);
+          newPos.add(lastPokePosition);
+          poke(newPos.x, newPos.y, pokeWidth);
+        }
+      }
+    }
+  }
+
   poke(pos.x, pos.z, pokeWidth);
+
+  lastPokeTime = pokeTime;
+  lastPokePosition = pokePosition;
   needsUpdate = true;
 
 
