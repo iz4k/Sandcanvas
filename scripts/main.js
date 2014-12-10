@@ -73,7 +73,7 @@ function init() {
 	document.body.appendChild( stats.domElement );
 	scene = new THREE.Scene();
 	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-	camera.position.z = 5;
+	camera.position.z = 0;
 	camera.position.y = 6;
 	camera.lookAt(origin);
 
@@ -217,12 +217,18 @@ function init() {
 
 	document.addEventListener("mousedown", function(){
 		document.onmousemove = function(e){
-		  	onMouseDown(e);
+		  	onMouseDown(e, 'mouse');
 		}
 		this.onmouseup = function() {
 		  	document.onmousemove = null
 	}
 	}, false);
+
+  document.addEventListener("touchmove", function(e){
+    onMouseDown(e, 'touch');
+    console.log(e.touches[0].pageX);
+  }, false);
+
 
 
   // document.addEventListener("drag", onMouseDown, false);
@@ -418,22 +424,31 @@ function heightMapPos(x,y){
   return [index, ix, iy];
 }
 
-
 var lastPokePosition = new THREE.Vector2();
 
 var lastPokeTime;
 var debugmousedown = 0;
 var debugpokes = 0;
 
-function onMouseDown( event ) {
+function onMouseDown( event , device) {
   if (controls.enabled) return false;
   var vector = new THREE.Vector3();
+  if (device === 'mouse'){
+    // console.log('mouse here: '+event.clientX + ' x - y ' + event.clientY);
+    vector.set(
 
-  vector.set(
-      ( event.clientX / window.innerWidth ) * 2 - 1,
-      - ( event.clientY / window.innerHeight ) * 2 + 1,
+        ( event.clientX / window.innerWidth ) * 2 - 1,
+        - ( event.clientY / window.innerHeight ) * 2 + 1,
+        0.5 );
+  }
+  else{
+    // console.log('touch here: '+event.touches[0].pageX + ' x - y ' + event.touches[0].pageY);
+    vector.set(
+      (event.touches[0].pageX/window.innerWidth)*2 -1,
+      - (event.touches[0].pageY/window.innerHeight)*2 +1 ,
       0.5 );
-
+  }
+  console.log(vector);
   vector.unproject( camera );
 
   var dir = vector.sub( camera.position ).normalize();
