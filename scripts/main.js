@@ -158,19 +158,32 @@ function init() {
 	document.body.appendChild( renderer.domElement );
 	window.addEventListener( 'resize', onWindowResize, false );
 
-	document.addEventListener("mousedown", function(){
+	document.addEventListener("mousedown", function(evt){
+    onMouseDown(evt, 'mouse', 'poke');
 		document.onmousemove = function(e){
-		  	onMouseDown(e, 'mouse');
+		  	onMouseDown(e, 'mouse', 'drag');
 		}
 		this.onmouseup = function() {
 		  	document.onmousemove = null
-	}
+   }
 	}, false);
 
-  document.addEventListener("touchmove", function(e){
-    onMouseDown(e, 'touch');
-    //console.log(e.touches[0].pageX);
+  document.addEventListener("touchstart", function(evt){
+    evt.preventDefault();
+    onMouseDown(evt, 'touch', 'poke');
+    document.ontouchmove = function(e){
+        e.preventDefault();
+        onMouseDown(e, 'touch', 'drag');
+    }
+    this.ontouchend = function() {
+        document.onmousemove = null
+   }
   }, false);
+
+  // document.addEventListener("touchmove", function(e){
+  //   onMouseDown(e, 'touch', 'drag');
+  //   //console.log(e.touches[0].pageX);
+  // }, false);
 
 
 
@@ -318,7 +331,7 @@ function erode() {
 var lastPokeX0, lastPokeZ0;
 
 // takes world coordinates
-function poke(x0, z0, r) {
+function poke(x0, z0, r, eventType) {
 
   // btw: will we sanitize the inputs so touches
   // close to sandbox edge are not allowed?
@@ -360,60 +373,60 @@ function poke(x0, z0, r) {
       }
     }
   }
-  /*
-  var circumferenceSteps = 40;
-  var step = 2*Math.PI / circumferenceSteps;
-  var distrVolumeUnit = displacedVolume / circumferenceSteps;
-  for (var rad = 0; rad < 2*Math.PI; rad += step) {
+  if(eventType=='poke'){
+    var circumferenceSteps = 40;
+    var step = 2*Math.PI / circumferenceSteps;
+    var distrVolumeUnit = displacedVolume / circumferenceSteps;
+    for (var rad = 0; rad < 2*Math.PI; rad += step) {
 
-    // console.log('in for');
-    var cx = x0 + r * Math.cos(rad);
-    var cz = z0 + r * Math.sin(rad);
-    //index in sand
-    var index = heightMapPos(cx, cz);
-    // console.log(displacedVolume + ' jonka displacedVolume pitäis olla: ' + (displacedVolume / circumferenceSteps)+' indexissä : '+index);
-    //hm[index[0]] += (displacedVolume / circumferenceSteps);
-    hm[index[0]] += distrVolumeUnit;
-    displacedVolume -= distrVolumeUnit; // for debugging balance
+      // console.log('in for');
+      var cx = x0 + r * Math.cos(rad);
+      var cz = z0 + r * Math.sin(rad);
+      //index in sand
+      var index = heightMapPos(cx, cz);
+      // console.log(displacedVolume + ' jonka displacedVolume pitäis olla: ' + (displacedVolume / circumferenceSteps)+' indexissä : '+index);
+      //hm[index[0]] += (displacedVolume / circumferenceSteps);
+      hm[index[0]] += distrVolumeUnit;
+      displacedVolume -= distrVolumeUnit; // for debugging balance
+    }
   }
-  */
+  if(eventType=='drag'){
+    // movement-directed distribution
 
-  // movement-directed distribution
+    // odd #'s only! not sure if formulas correct with even #'s
+    var arcPoints = 41;
+    var arcRads = Math.PI;
+    var arcRadsIncr = arcRads / (arcPoints - 1);
+    var distrVolumeUnit = displacedVolume / arcPoints;
+    var dirVec = new THREE.Vector3(x0-lastPokeX0, 0, z0-lastPokeZ0);
+    dirVec.setLength(r);
 
-  // odd #'s only! not sure if formulas correct with even #'s
-  var arcPoints = 41;
-  var arcRads = Math.PI;
-  var arcRadsIncr = arcRads / (arcPoints - 1);
-  var distrVolumeUnit = displacedVolume / arcPoints;
-  var dirVec = new THREE.Vector3(x0-lastPokeX0, 0, z0-lastPokeZ0);
-  dirVec.setLength(r);
-
-  // center point
-  var iterVec = dirVec.clone();
-  var index = heightMapPos(x0 + iterVec.x, z0 + iterVec.z);
-  hm[index[0]] += distrVolumeUnit;
-  displacedVolume -= distrVolumeUnit; // for debugging balance
-  // left arc
-  var rotMatLeft = new THREE.Matrix4();
-  rotMatLeft.makeRotationY(-arcRadsIncr);
-  for (var i = 1; i < arcPoints/2; ++i) {
-    iterVec.applyMatrix4(rotMatLeft);
+    // center point
+    var iterVec = dirVec.clone();
     var index = heightMapPos(x0 + iterVec.x, z0 + iterVec.z);
     hm[index[0]] += distrVolumeUnit;
     displacedVolume -= distrVolumeUnit; // for debugging balance
+    // left arc
+    var rotMatLeft = new THREE.Matrix4();
+    rotMatLeft.makeRotationY(-arcRadsIncr);
+    for (var i = 1; i < arcPoints/2; ++i) {
+      iterVec.applyMatrix4(rotMatLeft);
+      var index = heightMapPos(x0 + iterVec.x, z0 + iterVec.z);
+      hm[index[0]] += distrVolumeUnit;
+      displacedVolume -= distrVolumeUnit; // for debugging balance
+    }
+    // right arc
+    iterVec = dirVec.clone();
+    var rotMatRight = new THREE.Matrix4();
+    rotMatRight.makeRotationY(arcRadsIncr);
+    for (var i = 1; i < arcPoints/2; ++i) {
+      iterVec.applyMatrix4(rotMatRight);
+      var index = heightMapPos(x0 + iterVec.x, z0 + iterVec.z);
+      hm[index[0]] += distrVolumeUnit;
+      displacedVolume -= distrVolumeUnit; // for debugging balance
+    }
+    //console.log("volume balance should be 0: " + displacedVolume);
   }
-  // right arc
-  iterVec = dirVec.clone();
-  var rotMatRight = new THREE.Matrix4();
-  rotMatRight.makeRotationY(arcRadsIncr);
-  for (var i = 1; i < arcPoints/2; ++i) {
-    iterVec.applyMatrix4(rotMatRight);
-    var index = heightMapPos(x0 + iterVec.x, z0 + iterVec.z);
-    hm[index[0]] += distrVolumeUnit;
-    displacedVolume -= distrVolumeUnit; // for debugging balance
-  }
-  console.log("volume balance should be 0: " + displacedVolume);
-
   lastPokeX0 = x0;
   lastPokeZ0 = z0;
 
@@ -434,7 +447,7 @@ var lastPokeTime;
 var debugmousedown = 0;
 var debugpokes = 0;
 
-function onMouseDown( event , device) {
+function onMouseDown( event , device, eventType) {
   if (controls.enabled) return false;
   var vector = new THREE.Vector3();
   if (device === 'mouse'){
@@ -496,13 +509,13 @@ function onMouseDown( event , device) {
           var newPos = posDelta.clone();
           newPos.multiplyScalar(i);
           newPos.add(lastPokePosition);
-          poke(newPos.x, newPos.y, pokeWidth);
+          poke(newPos.x, newPos.y, pokeWidth, eventType);
         }
       }
     }
   }
 
-  poke(pos.x, pos.z, pokeWidth);
+  poke(pos.x, pos.z, pokeWidth, eventType);
 
   lastPokeTime = pokeTime;
   lastPokePosition = pokePosition;
