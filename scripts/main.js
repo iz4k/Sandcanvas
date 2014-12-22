@@ -145,7 +145,7 @@ function init() {
 	var mesh = new THREE.Mesh(geo, sand);
 
 
-	
+
 	scene.add(mesh);
 
 	//OTHER STUFF
@@ -188,8 +188,8 @@ $('#camera').click(function(event) {
 		} else if (evt.keyCode == 13) {
       // Ykän debugit enterillä
       //console.log("mousedown: " + debugmousedown + " extrapokes: " + debugpokes);
-      console.log(camera.position.y);
-      console.log()
+      //console.log(camera.position.y);
+      //console.log()
     }
 	});
 }
@@ -360,7 +360,8 @@ function poke(x0, z0, r) {
   }
   var circumferenceSteps = 40;
   var step = 2*Math.PI / circumferenceSteps;
-  for (var rad = 0; rad <= 2*Math.PI; rad += step) {
+  var distrVolumeUnit = displacedVolume / circumferenceSteps;
+  for (var rad = 0; rad < 2*Math.PI; rad += step) {
 
     // console.log('in for');
     var cx = x0 + r * Math.cos(rad);
@@ -368,8 +369,11 @@ function poke(x0, z0, r) {
     //index in sand
     var index = heightMapPos(cx, cz);
     // console.log(displacedVolume + ' jonka displacedVolume pitäis olla: ' + (displacedVolume / circumferenceSteps)+' indexissä : '+index);
-    hm[index[0]] += (displacedVolume / circumferenceSteps);
+    //hm[index[0]] += (displacedVolume / circumferenceSteps);
+    hm[index[0]] += distrVolumeUnit;
+    displacedVolume -= distrVolumeUnit; // for debugging balance
   }
+  console.log("volume balance should be 0: " + displacedVolume);
 }
 function heightMapPos(x,y){
 
@@ -414,7 +418,7 @@ function onMouseDown( event , device) {
   var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
 
   var clampWidth = sandWidth/2 - 1.5*pokeWidth;
-  var clampLength = sandLength/2 - 1.5*pokeWidth; 
+  var clampLength = sandLength/2 - 1.5*pokeWidth;
   pos.x = THREE.Math.clamp(pos.x, -clampWidth, clampWidth );
   pos.z = THREE.Math.clamp(pos.z, -clampLength, clampLength);
 
