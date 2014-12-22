@@ -14,7 +14,7 @@ $(function() {
     		$('.value').html(ui.value);
         // maxSandHeight = ui.value;
         pokeWidth = ui.value / 10;
-        needsUpdate = true;
+        //needsUpdate = true;
     	}
     });
 
@@ -24,6 +24,18 @@ $(function() {
 
     });
 
+    $("#fullscreen").on("click", function(){
+      if( THREEx.FullScreen.activated() ){
+        THREEx.FullScreen.cancel();
+      }else{
+        THREEx.FullScreen.request();
+      }
+    });
+
+    $("#reset").on("click", function(){
+      initHeightmap();
+      needsUpdate = true;
+    });
 
     // Shows default value
     $('.value').html($('#slider').slider('value'));
@@ -72,9 +84,9 @@ function init() {
 	stats.domElement.style.zIndex = 10;
 	document.body.appendChild( stats.domElement );
 	scene = new THREE.Scene();
-	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+	camera = new THREE.PerspectiveCamera( 25, window.innerWidth / window.innerHeight, 0.1, 1000 );
 	camera.position.z = 0;
-	camera.position.y = 6;
+	camera.position.y = getCameraY();
 	camera.lookAt(origin);
 
 	controls = new THREE.OrbitControls(camera);
@@ -118,10 +130,10 @@ function init() {
 	//sand = new THREE.MeshLambertMaterial({color:0xC2B280});
 	sand = new THREE.MeshPhongMaterial({
 		//map: THREE.ImageUtils.loadTexture('hiekka.jpg'),
-//		normalMap: normalmap,
-//		normalScale: {x:0,y:1,z:0},
+    //normalMap: normalmap,
+    //normalScale: {x:0,y:1,z:0},
 		bumpMap: bumpmap,
-		bumpScale: 0.2,
+		bumpScale: 0.03,
 		color: 0xC2B280,   //diffuse
 
 		specular: 0x6D6C6B,
@@ -132,78 +144,8 @@ function init() {
 	var mesh = new THREE.Mesh(geo, sand);
 
 
-	mesh.castShadow = true;
-	mesh.receiveShadow = true;
+	
 	scene.add(mesh);
-
-
-//	var ambient = 0x050505, diffuse = 0x331100, specular = 0xffffff, shininess = 10, scale = 1;
-
-//	// normal map shader
-
-//	var shader = THREE.ShaderLib[ "normalmap" ];
-//	var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
-
-//	//uniforms[ "enableAO" ].value = true;
-//	uniforms[ "enableDiffuse" ].value = false;
-//	uniforms[ "enableSpecular" ].value = false;
-//	//uniforms[ "enableReflection" ].value = true;
-//	//uniforms[ "enableDisplacement" ].value = true;
-
-//	uniforms[ "tNormal" ].value = normalmap;
-//	//uniforms[ "tAO" ].value = THREE.ImageUtils.loadTexture( "textures/normal/ninja/ao.jpg" );
-
-//	//uniforms[ "tDisplacement" ].value = THREE.ImageUtils.loadTexture( "textures/normal/ninja/displacement.jpg" );
-//	//uniforms[ "uDisplacementBias" ].value = - 0.428408;
-//	//uniforms[ "uDisplacementScale" ].value = 2.436143;
-
-//	uniforms[ "uNormalScale" ].value.y = -1;
-
-//	uniforms[ "diffuse" ].value.setHex( diffuse );
-//	uniforms[ "specular" ].value.setHex( specular );
-//	uniforms[ "ambient" ].value.setHex( ambient );
-
-//	uniforms[ "shininess" ].value = shininess;
-
-//	//uniforms[ "tCube" ].value = reflectionCube;
-//	uniforms[ "reflectivity" ].value = 0.1;
-
-//	uniforms[ "diffuse" ].value.convertGammaToLinear();
-//	uniforms[ "specular" ].value.convertGammaToLinear();
-//	uniforms[ "ambient" ].value.convertGammaToLinear();
-
-
-//	var parameters = { fragmentShader: shader.fragmentShader, vertexShader: shader.vertexShader, uniforms: uniforms, lights: true, fog: false };
-//	var material1 = new THREE.ShaderMaterial( parameters );
-
-//	var material2 = new THREE.MeshPhongMaterial( {
-//		color: diffuse,
-//		specular: specular,
-//		ambient: ambient,
-//		shininess: shininess,
-//		normalMap: uniforms[ "tNormal" ].value,
-//		normalScale: uniforms[ "uNormalScale" ].value,
-//		combine: THREE.MixOperation,
-//		reflectivity: 0.1
-//	} );
-
-//	//
-
-//
-//	var mesh1 = new THREE.Mesh( geo, material1 );
-//	//mesh1.position.x = - scale * 12;
-//	mesh1.scale.set( scale, scale, scale );
-//	mesh1.castShadow = true;
-//	mesh1.receiveShadow = true;
-//	scene.add( mesh1 );
-
-//	var mesh2 = new THREE.Mesh( geo, material2 );
-//	//mesh2.position.x = scale * 12;
-//	mesh2.scale.set( scale, scale, scale );
-//	mesh2.castShadow = true;
-//	mesh2.receiveShadow = true;
-//	scene.add( mesh2 );
-
 
 	//OTHER STUFF
 
@@ -226,7 +168,7 @@ function init() {
 
   document.addEventListener("touchmove", function(e){
     onMouseDown(e, 'touch');
-    console.log(e.touches[0].pageX);
+    //console.log(e.touches[0].pageX);
   }, false);
 
 
@@ -244,7 +186,9 @@ $('#camera').click(function(event) {
 		  controls.enabled = true;
 		} else if (evt.keyCode == 13) {
       // Ykän debugit enterillä
-      console.log("mousedown: " + debugmousedown + " extrapokes: " + debugpokes);
+      //console.log("mousedown: " + debugmousedown + " extrapokes: " + debugpokes);
+      console.log(camera.position.y);
+      console.log()
     }
 	});
 }
@@ -255,6 +199,15 @@ function debugModeToggle(){
 
 var normalTickInterval = 1 / 30; // max 30 times/s
 var normalTickCounter = 0;
+
+function getCameraY(){
+  if (window.matchMedia("(orientation: landscape)").matches) var y = 1/2*(sandWidth/camera.aspect)*(1/Math.tan(Math.PI*camera.fov/360)); //landscape
+  else var y = 1/2*sandLength*(1/Math.tan(Math.PI*camera.fov/360)); //portrait
+  y -= 0.45 //so that the black background is never visible
+
+  return y;
+
+}
 
 function render() {
   normalTickCounter += clock.getDelta();
@@ -418,6 +371,7 @@ function poke(x0, z0, r) {
   }
 }
 function heightMapPos(x,y){
+
   var ix = (2*x)/sandWidth;
   ix = Math.round((ix+1)/2*heightMapWidth);
   var iy = (2*y)/sandLength;
@@ -457,6 +411,11 @@ function onMouseDown( event , device) {
   var distance = - camera.position.y / dir.y;
 
   var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+
+  var clampWidth = sandWidth/2 - 1.5*pokeWidth;
+  var clampLength = sandLength/2 - 1.5*pokeWidth; 
+  pos.x = THREE.Math.clamp(pos.x, -clampWidth, clampWidth );
+  pos.z = THREE.Math.clamp(pos.z, -clampLength, clampLength);
 
   // we don't always get inputs smoothly from the browser
   // (at least mouse -- what happens with touch/multitouch???)
@@ -542,6 +501,7 @@ function onWindowResize() {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
+  camera.position.y = getCameraY();
 }
 
 $('.toggleUi').click(function(event) {
