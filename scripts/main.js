@@ -315,6 +315,8 @@ function erode() {
   }
 }
 
+var lastPokeX0, lastPokeZ0;
+
 // takes world coordinates
 function poke(x0, z0, r) {
 
@@ -358,6 +360,7 @@ function poke(x0, z0, r) {
       }
     }
   }
+  /*
   var circumferenceSteps = 40;
   var step = 2*Math.PI / circumferenceSteps;
   var distrVolumeUnit = displacedVolume / circumferenceSteps;
@@ -373,7 +376,47 @@ function poke(x0, z0, r) {
     hm[index[0]] += distrVolumeUnit;
     displacedVolume -= distrVolumeUnit; // for debugging balance
   }
+  */
+
+  // movement-directed distribution
+
+  // odd #'s only! not sure if formulas correct with even #'s
+  var arcPoints = 41;
+  var arcRads = Math.PI;
+  var arcRadsIncr = arcRads / (arcPoints - 1);
+  var distrVolumeUnit = displacedVolume / arcPoints;
+  var dirVec = new THREE.Vector3(x0-lastPokeX0, 0, z0-lastPokeZ0);
+  dirVec.setLength(r);
+
+  // center point
+  var iterVec = dirVec.clone();
+  var index = heightMapPos(x0 + iterVec.x, z0 + iterVec.z);
+  hm[index[0]] += distrVolumeUnit;
+  displacedVolume -= distrVolumeUnit; // for debugging balance
+  // left arc
+  var rotMatLeft = new THREE.Matrix4();
+  rotMatLeft.makeRotationY(-arcRadsIncr);
+  for (var i = 1; i < arcPoints/2; ++i) {
+    iterVec.applyMatrix4(rotMatLeft);
+    var index = heightMapPos(x0 + iterVec.x, z0 + iterVec.z);
+    hm[index[0]] += distrVolumeUnit;
+    displacedVolume -= distrVolumeUnit; // for debugging balance
+  }
+  // right arc
+  iterVec = dirVec.clone();
+  var rotMatRight = new THREE.Matrix4();
+  rotMatRight.makeRotationY(arcRadsIncr);
+  for (var i = 1; i < arcPoints/2; ++i) {
+    iterVec.applyMatrix4(rotMatRight);
+    var index = heightMapPos(x0 + iterVec.x, z0 + iterVec.z);
+    hm[index[0]] += distrVolumeUnit;
+    displacedVolume -= distrVolumeUnit; // for debugging balance
+  }
   console.log("volume balance should be 0: " + displacedVolume);
+
+  lastPokeX0 = x0;
+  lastPokeZ0 = z0;
+
 }
 function heightMapPos(x,y){
 
