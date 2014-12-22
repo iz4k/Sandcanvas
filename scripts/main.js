@@ -96,7 +96,8 @@ function init() {
 	renderer = new THREE.WebGLRenderer();
 	renderer.setSize( window.innerWidth, window.innerHeight );
 
-	geo = new THREE.PlaneGeometry(sandWidth, sandLength, heightMapWidth-1, heightMapLength-1);
+	//geo = new THREE.PlaneGeometry(sandWidth, sandLength, heightMapWidth-1, heightMapLength-1);
+  geo = new THREE.PlaneBufferGeometry( sandWidth, sandLength, heightMapWidth-1, heightMapLength-1 );
 	geo.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 	geo.computeFaceNormals();
 	geo.computeVertexNormals();
@@ -215,7 +216,7 @@ function render() {
 
   erode();
 
- 	if (needsUpdate && normalTickCounter > normalTickInterval){
+  if (needsUpdate && normalTickCounter > normalTickInterval){
     normalTickCounter -= normalTickInterval;
  		updateMesh();
 	 	geo.computeFaceNormals();
@@ -480,9 +481,14 @@ function initHeightmap() {
 
 
 function updateMesh() {
+  /*
   for (var i = 0, len = hm.length; i < len; ++i) {
     geo.vertices[i].y = hm[i];
 
+  }*/
+  var j = 0;
+  for (var i = 1, len = hm.length; j < len; i+=3) {
+    geo.attributes.position.array[i] = hm[j++];
   }
   geo.verticesNeedUpdate = true;
   geo.normalsNeedUpdate = true;
@@ -508,4 +514,4 @@ $('.toggleUi').click(function(event) {
   var txt = $(".ui .controls").hasClass('closed') ? 'Hide controls' : 'Show controls';
    $(".toggleUi").text(txt);
   $('.ui .controls').toggleClass('closed');
-}); 
+});
